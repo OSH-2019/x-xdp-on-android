@@ -1,6 +1,7 @@
 # Research report
 
    * [Research report](#research-report)
+      * [Team members](#team-members)
       * [Introduction](#introduction)
       * [Background](#background)
          * [C10K and C10M](#c10k-and-c10m)
@@ -73,6 +74,14 @@
             * [About 5G](#about-5g-1)
          * [Conclusion](#conclusion-3)
       * [Reference](#reference)
+
+
+##	Team members
+*	龚平 
+*	王怡萱
+*	魏剑宇
+*	黄展翔
+*	罗极羽
 
 ## Introduction
 
