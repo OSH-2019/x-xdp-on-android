@@ -612,7 +612,7 @@ Android的内核是根据Linux内核的长期支持的分支，具有典型的Li
 
 由于Android继承自linux，Android内部网络数据通路和Linux基本相同，Android对网络数据的处理也是经过内核的。而且由于Java虚拟机的缘故，相比一般的linux系统，安卓中网络数据通路更长。
 
-![](assets/新文档 2019-03-31 14.58.54_1.jpg)
+![](assets/wifi.jpg)
 
 在WiFi的系统结构图中，网络数据从上到下经过了四层：Java应用层->Java架构层->C框架层->内核空间层。
 
