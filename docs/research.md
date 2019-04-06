@@ -49,32 +49,33 @@
       * [Importance &amp; Significance](#importance--significance)
          * [Android Background](#android-background)
             * [Mobile CPU Classification](#mobile-cpu-classification)
-         * [Android wifi data path](#android-wifi-data-path)
+            * [android系统架构](#android系统架构)
+            * [HIDL](#hidl)
+               * [网络堆栈配置工具](#网络堆栈配置工具)
+         * [Android的网络通信](#android的网络通信)
+            * [Netd](#netd)
+            * [android 平台提供的API](#android-平台提供的api)
+               * [http.client接口](#httpclient接口)
+            * [java.net 接口](#javanet-接口)
+               * [socket](#socket)
+            * [android wifi 流程](#android-wifi-流程)
+               * [wifi的基本架构](#wifi的基本架构)
+               * [wifi 在android中如何工作](#wifi-在android中如何工作)
+         * [HAL](#hal)
+            * [为什么有HAL](#为什么有hal)
          * [Network performance load stress tests](#network-performance-load-stress-tests)
             * [Linux(raw), XDP, DPDK](#linuxraw-xdp-dpdk)
             * [Android packet processing performance](#android-packet-processing-performance)
                * [Conclusion](#conclusion)
             * [Conclusion](#conclusion-1)
-         * [About 4G](#about-4g)
-            * [Definition](#definition)
-            * [Specifications](#specifications)
-         * [About 5G](#about-5g)
-            * [5G concepts and prospects](#5g-concepts-and-prospects)
-            * [Specifications](#specifications-1)
-            * [4G vs 5G](#4g-vs-5g)
-               * [Frequency](#frequency)
-               * [Speed](#speed)
-               * [Bandwidth](#bandwidth)
-               * [latency](#latency)
-               * [Conclusion](#conclusion-2)
          * [Future of Network (2017-2022)](#future-of-network-2017-2022)
             * [Global networking devices](#global-networking-devices)
             * [IP data traffic](#ip-data-traffic)
             * [Network flow](#network-flow)
-            * [About 5G](#about-5g-1)
-         * [Conclusion](#conclusion-3)
+            * [About 5G](#about-5g)
+         * [Conclusion](#conclusion-2)
+      * [Related work](#related-work)
       * [Reference](#reference)
-
 
 ##	Team members
 *	龚平 
@@ -615,15 +616,333 @@ DPDK则是提供一套包处理库，程序员在软件层面、跳过操作系�
 
 ![CPU Architecture and design](assets/20160428035509228-1554018510247.jpg)
 
-###	Android wifi data path
 
-Android的内核是根据Linux内核的长期支持的分支，具有典型的Linux调度和功能。截至2018年，Android的目标是Linux内核的4.4、4.9或是4.14版本。实际的内核取决于单个设备。
 
-由于Android继承自linux，Android内部网络数据通路和Linux基本相同，Android对网络数据的处理也是经过内核的。而且由于Java虚拟机的缘故，相比一般的linux系统，安卓中网络数据通路更长。
+#### android系统架构
 
-![](assets/wifi.jpg)
+![](assets/architecture.png)
 
-在WiFi的系统结构图中，网络数据从上到下经过了四层：Java应用层->Java架构层->C框架层->内核空间层。
+
+
+- **应用框架**。应用框架最常被应用开发者使用。作为硬件开发者，您应该非常了解开发者 API，因为很多此类 API 都可以直接映射到底层 HAL 接口，并可提供与实现驱动程序相关的实用信息。
+- **Binder IPC**。Binder 进程间通信 (IPC) 机制允许应用框架跨越进程边界并调用 Android 系统服务代码，这使得高级框架 API 能与 Android 系统服务进行交互。在应用框架级别，开发者无法看到此类通信的过程，但一切似乎都在“按部就班地运行”。
+- **系统服务**。系统服务是专注于特定功能的模块化组件，例如窗口管理器、搜索服务或通知管理器。 应用框架 API 所提供的功能可与系统服务通信，以访问底层硬件。Android 包含两组服务：“系统”（诸如窗口管理器和通知管理器之类的服务）和“媒体”（与播放和录制媒体相关的服务）。
+- **硬件抽象层 (HAL)**。HAL 可定义一个标准接口以供硬件供应商实现，这可让 Android 忽略较低级别的驱动程序实现。借助 HAL，您可以顺利实现相关功能，而不会影响或更改更高级别的系统。HAL 实现会被封装成模块，并会由 Android 系统适时地加载。
+- **Linux 内核**。开发设备驱动程序与开发典型的 Linux 设备驱动程序类似。Android 使用的 Linux 内核版本包含几个特殊的补充功能，例如：Low Memory Killer（一种内存管理系统，可更主动地保留内存）、唤醒锁定（一种 [`PowerManager`](https://developer.android.google.cn/reference/android/os/PowerManager.html) 系统服务）、Binder IPC 驱动程序以及对移动嵌入式平台来说非常重要的其他功能。这些补充功能主要用于增强系统功能，不会影响驱动程序开发。您可以使用任意版本的内核，只要它支持所需功能（如 Binder 驱动程序）即可。不过，我们建议您使用 Android 内核的最新版本。
+#### HIDL
+
+HAL 接口定义语言（简称 HIDL，发音为“hide-l”）是用于指定 HAL 和其用户之间的接口的一种接口描述语言 (IDL)。HIDL 允许指定类型和方法调用（会汇集到接口和软件包中）。从更广泛的意义上来说，HIDL 是用于在可以独立编译的代码库之间进行通信的系统。
+
+HIDL 旨在用于进程间通信 (IPC)。进程之间的通信[*经过 Binder 化*](https://source.android.google.cn/devices/architecture/hidl/binder-ipc)。对于必须与进程相关联的代码库，还可以使用[直通模式](https://source.android.google.cn/devices/architecture/hidl#passthrough)（在 Java 中不受支持）。
+
+HIDL 可指定数据结构和方法签名，这些内容会整理归类到接口（与类相似）中，而接口会汇集到软件包中。尽管 HIDL 具有一系列不同的关键字，但 C++ 和 Java 程序员对 HIDL 的语法并不陌生。此外，HIDL 还使用 Java 样式的注释。
+
+##### 网络堆栈配置工具
+
+Android 操作系统中包含标准的 Linux 网络实用程序，例如 `ifconfig`、`ip` 和 `ip6tables`。这些实用程序位于系统映像中，并支持对整个 Linux 网络堆栈进行配置。在运行 Android 7.x 及更低版本的设备上，供应商代码可以直接调用此类二进制文件，这会导致以下问题：
+
+- 由于网络实用程序在系统映像中更新，因此无法提供稳定的实现。
+- 网络实用程序的范围非常广泛，因此难以在保证行为可预测的情况下不断改进系统映像。
+
+在运行 Android 8.0 的设备上，供应商分区可在系统分区接收更新时保持不变。为了实现这一点，Android 8.0 不仅提供定义稳定的带版本接口的功能，同时还使用了 SELinux 限制，以便在供应商映像与系统映像之间保持已知良好的相互依赖关系。
+
+供应商可以使用平台提供的网络配置实用程序来配置 Linux 网络堆栈，但这些实用程序并未包含 HIDL 接口封装容器。为定义这类接口，Android 8.0 中纳入了 `netutils-wrapper-1.0` 工具。
+
+### Android的网络通信
+
+#### Netd
+
+Netd是Android系统中专门负责网络管理和控制的后台daemon程序，其功能主要分三大块：
+
+- 设置防火墙（Firewall）、网络地址转换（NAT）、带宽控制、无线网卡软接入点（Soft Access Point）控制，网络设备绑定（Tether）等。 
+- Android系统中DNS信息的缓存和管理。 
+- 网络服务搜索（Net Service Discovery，简称NSD）功能，包括服务注册（Service Registration）、服务搜索（Service Browse）和服务名解析（Service Resolve）等。 
+
+Netd的工作流程和Vold类似，其工作可分成两部分： 
+1. Netd接收并处理来自Framework层中NetworkManagementService或NsdService的命令。这些命令最终由Netd中对应的Command对象去处理。 
+2. Net接收并解析来自Kernel的UEvent消息，然后再转发给Framework层中对应Service去处理。
+
+Netd位于Framework层和Kernel层之间，它是Android系统中网络相关消息和命令转发及处理的中枢模块。
+
+#### android 平台提供的API
+![](assets/API1.jpg)
+
+![](assets/API2.jpg)
+
+##### http.client接口
+首先，介绍一下通过http包工具进行通信，分get和post两种方式，两者的区别是：
+
+1，post请求发送数据到服务器端，而且数据放在html header中一起发送到服务器url，数据对用户不可见，get请求是把参数值加到url的队列中，这在一定程度上，体现出post的安全性要比get高
+
+2，get传送的数据量小，一般不能大于2kb，post传送的数据量大，一般默认为不受限制。
+
+访问网络要加入权限 <uses-permission android:name="android.permission.INTERNET" />
+
+下面是get请求HttpGet时的示例代码：
+
+```vbscript
+ 1 // 创建DefaultHttpClient对象
+ 2 HttpClient httpClient = new DefaultHttpClient();
+ 3 // 创建一个HttpGet对象
+ 4                 HttpGet get = new HttpGet(
+ 5                     "http://192.168.1.88:8888/foo/secret.jsp");
+ 6                 try
+ 7                 {
+ 8                     // 发送GET请求
+ 9                     HttpResponse httpResponse = httpClient.execute(get);
+10                     HttpEntity entity = httpResponse.getEntity();
+11                     if (entity != null)
+12                     {
+13                         // 读取服务器响应
+14                         BufferedReader br = new BufferedReader(
+15                             new InputStreamReader(entity.getContent()));
+16                         String line = null;
+17                         response.setText("");
+18                         while ((line = br.readLine()) != null)
+19                         {
+20                             // 使用response文本框显示服务器响应
+21                             response.append(line + "\n");
+22                         }
+23                     }
+24                 }
+25                 catch (Exception e)
+26                 {
+27                     e.printStackTrace();
+28                 }
+29             }
+```
+
+post请求HttpPost的示例代码：
+
+```vbscript
+ 1 HttpClient httpClient=new DefaultHttpClient();
+ 2 HttpPost post = new HttpPost(
+ 3                                     "http://192.168.1.88:8888/foo/login.jsp");
+ 4                                 // 如果传递参数个数比较多的话可以对传递的参数进行封装
+ 5                                 List<NameValuePair> params = new ArrayList<NameValuePair>();
+ 6                                 params.add(new BasicNameValuePair("name", name));
+ 7                                 params.add(new BasicNameValuePair("pass", pass));
+ 8                                 try
+ 9                                 {
+10                                     // 设置请求参数
+11                                     post.setEntity(new UrlEncodedFormEntity(
+12                                         params, HTTP.UTF_8));
+13                                     // 发送POST请求
+14                                     HttpResponse response = httpClient
+15                                         .execute(post);
+16                                     // 如果服务器成功地返回响应
+17                                     if (response.getStatusLine()
+18                                         .getStatusCode() == 200)
+19                                     {
+20                                         String msg = EntityUtils
+21                                             .toString(response.getEntity());
+22                                         // 提示登录成功
+23                                         Toast.makeText(HttpClientTest.this,
+24                                             msg, 5000).show();
+25                                     }
+26                                 }
+27                                 catch (Exception e)
+28                                 {
+29                                     e.printStackTrace();
+30                                 }
+31                             }
+```
+
+#### java.net 接口
+其次，介绍使用java包的工具进行通信，也分get和post方式
+
+默认使用get方式，示例代码：
+
+```vbscript
+ 1 try
+ 2         {
+ 3             String urlName = url + "?" + params;
+ 4             URL realUrl = new URL(urlName);
+ 5             // 打开和URL之间的连接或者HttpUrlConnection
+ 6             URLConnection conn =realUrl.openConnection();
+ 7             // 设置通用的请求属性
+ 8             conn.setRequestProperty("accept", "*/*");
+ 9             conn.setRequestProperty("connection", "Keep-Alive");
+10             conn.setRequestProperty("user-agent",
+11                 "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)");
+12             // 建立实际的连接
+13             conn.connect();
+14             // 获取所有响应头字段
+15             Map<String, List<String>> map = conn.getHeaderFields();
+16             // 遍历所有的响应头字段
+17             for (String key : map.keySet())
+18             {
+19                 System.out.println(key + "--->" + map.get(key));
+20             }
+21             // 定义BufferedReader输入流来读取URL的响应
+22             in = new BufferedReader(
+23                 new InputStreamReader(conn.getInputStream()));
+24             String line;
+25             while ((line = in.readLine()) != null)
+26             {
+27                 result += "\n" + line;
+28             }
+29         }
+30         catch (Exception e)
+31         {
+32             System.out.println("发送GET请求出现异常！" + e);
+33             e.printStackTrace();
+34         }
+35         // 使用finally块来关闭输入流
+```
+
+使用post的示例代码：
+
+```vbscript
+ 1 try
+ 2         {
+ 3             URL realUrl = new URL(url);
+ 4             // 打开和URL之间的连接
+ 5             URLConnection conn = realUrl.openConnection();
+ 6             // 设置通用的请求属性
+ 7             conn.setRequestProperty("accept", "*/*");
+ 8             conn.setRequestProperty("connection", "Keep-Alive");
+ 9             conn.setRequestProperty("user-agent",
+10                 "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)");
+11             // 发送POST请求必须设置如下两行
+12             conn.setDoOutput(true);
+13             conn.setDoInput(true);
+14             // 获取URLConnection对象对应的输出流
+15             out = new PrintWriter(conn.getOutputStream());
+16             // 发送请求参数
+17             out.print(params);
+18             // flush输出流的缓冲
+19             out.flush();
+20             // 定义BufferedReader输入流来读取URL的响应
+21             in = new BufferedReader(
+22                 new InputStreamReader(conn.getInputStream()));
+23             String line;
+24             while ((line = in.readLine()) != null)
+25             {
+26                 result += "\n" + line;
+27             }
+28         }
+29         catch (Exception e)
+30         {
+31             System.out.println("发送POST请求出现异常！" + e);
+32             e.printStackTrace();
+33         }
+```
+
+
+从以上知，get请求只需要`conn.connect().post`请求时，必须设`conn.setDoOutput(true)`,`conn.setDoinput(true)`,还必须获取`URLConnection`的输出流`getOutputStream()`
+
+##### socket
+最后，使用套接字（soket）进行通信分为两种形式：面向连接的（tcp）和无连接的（udp 数据报）
+
+tcp连接示例：
+
+```vbscript
+//服务器端
+//创建一个ServerSocket，用于监听客户端Socket的连接请求
+       ServerSocket ss = new ServerSocket(30000);
+        //采用循环不断接受来自客户端的请求
+        while (true)
+        {
+            //每当接受到客户端Socket的请求，服务器端也对应产生一个Socket
+            Socket s = ss.accept();
+            OutputStream os = s.getOutputStream();
+            os.write("您好，您收到了服务器的消息！\n"
+                .getBytes("utf-8"));
+            //关闭输出流，关闭Socket
+            os.close();
+            s.close();
+        }
+
+//客户端
+
+Socket socket = new Socket("192.168.1.88" , 30000);
+            //将Socket对应的输入流包装成BufferedReader
+            BufferedReader br = new BufferedReader(
+                new InputStreamReader(socket.getInputStream()));
+            //进行普通IO操作
+            String line = br.readLine();
+            show.setText("来自服务器的数据：" + line);            
+            br.close();
+            socket.close();   
+```
+
+udp连接示例：
+
+```vbscript
+ 1 服务器端:
+ 2     try {
+ 3                 //创建一个DatagramSocket对象，并指定监听的端口号
+ 4                 DatagramSocket socket = new DatagramSocket(4567);
+ 5                 byte data [] = new byte[1024];
+ 6                 //创建一个空的DatagramPacket对象
+ 7                 DatagramPacket packet = new DatagramPacket(data,data.length);
+ 8                 //使用receive方法接收客户端所发送的数据
+ 9                 socket.receive(packet);
+10                 String result = new String(packet.getData(),packet.getOffset(),packet.getLength());
+11                 System.out.println("result--->" + result);
+12             } catch (Exception e) {
+13                 // TODO Auto-generated catch block
+14                 e.printStackTrace();
+15 
+16 
+17 客户端：
+18 
+19 try {
+20             //首先创建一个DatagramSocket对象
+21             DatagramSocket socket = new DatagramSocket(4567);
+22             //创建一个InetAddree
+23             InetAddress serverAddress = InetAddress.getByName("192.168.1.104");
+24             String str = "hello";
+25             byte data [] = str.getBytes();
+26             //创建一个DatagramPacket对象，并指定要讲这个数据包发送到网络当中的哪个地址，以及端口号
+27             DatagramPacket packet = new DatagramPacket(data,data.length,serverAddress,4567);
+28             //调用socket对象的send方法，发送数据
+29             socket.send(packet);
+30         } catch (Exception e) {
+31             // TODO Auto-generated catch block
+32             e.printStackTrace();
+33         }
+```
+
+#### android wifi 流程
+
+##### wifi的基本架构
+
+1. wifi用户空间的程序和库: 
+   external/wpa_supplicant/ 
+    生成库libwpaclient.so和守护进程wpa_supplicant。
+
+2. hardware/libhardware_legary/wifi/是wifi管理库。
+
+3. JNI部分： 
+    frameworks/base/core/jni/android_net_wifi_Wifi.cpp
+
+4. JAVA部分： 
+     frameworks/base/services/java/com/android/server/    
+
+     frameworks/base/wifi/java/android/net/wifi/
+
+5. WIFI Settings应用程序位于： 
+   packages/apps/Settings/src/com/android/settings/wifi/
+
+##### wifi 在android中如何工作
+
+Android使用一个修改版`wpa_supplicant`作为daemon来控制WIFI，代码位于external/  wpa_supplicant。wpa_supplicant通过socket hardware/libhardware_legacy/wifi/wifi.c通信。UI通过android.net.wifi package （frameworks/base/wifi/java/android/net/wifi/）发送命令给wifi.c。 相应的JNI实现位于frameworks/base/core/jni/android_net_wifi_Wifi.cpp。 更高一级的网络管理位于frameworks/base/core/java/android/net。 
+
+### HAL
+
+Android的硬件抽象层，简单来说，就是对Linux内核驱动程序的封装，向上提供接口，屏蔽低 层的实现细节。也就是说，把对硬件的支持分成了两层，一层放在用户空间（User Space）， 一层放在内核空间（Kernel Space），其中，硬件抽象层运行在用户空间，而linux内核驱动程序运行在内核空间。
+
+#### 为什么有HAL
+
+为什么要把对硬件的支持分两块来实现？把硬件抽象层和内核驱动整合在一起放在内核空间不可行吗？从技术实现的角度来看，是可以的，然而从商业的角度来看，把对硬件的支持 逻辑都放在内核空间，可能会损害厂家的利益。
+
+- 我们知道，Linux内核源代码版权遵循GNU License，而android源代码版权遵循Apache License，前者在发布产品时，必须公布源代码，而 后者无须发布源代码。如果把对硬件支持的所有代码都放在Linux驱动层，那就意味着发布时要公开驱动程序的源代码，而公开源代码就意味着把硬件的相关参数和实现都公开了，在手机市场竞争激烈的今天，这对厂家来说，损害非常大。
+
+- 内核驱动层只提供简单的访问硬件逻辑，例如读写硬件寄存器的通道，至于从硬件中读到了什么值或者写了什么值到硬件中的逻辑，都放在硬件抽象层中去了，这样就可以把商业秘密隐藏起来了。也正是由于这个分层的原因，Android被踢出了Linux内核主线代码树中。
+
+- Android放在内核空间的驱动程序对硬件的支持是不完整的，把Linux内核移植到别的机器上去时，由于缺乏硬件抽象层的支持，硬件就完全不 能用了，这也是为什么说Android是开放系统而不是开源系统的原因。
 
 ### Network performance load stress tests
 
@@ -681,86 +1000,7 @@ Android的内核是根据Linux内核的长期支持的分支，具有典型的Li
 
 目前4G和WIFI网络传输速率普遍不会超过百兆，手机SoC还是能够处理的。但是当5G来临，手机SoC不得不具备千兆网络的处理能力。我们测试的骁龙625尽管不是目前最强的android设备SoC，但是还是可以推断出，千兆网络处理将占据大部分手机CPU资源。而在linux上采用XDP技术，处理相同的网络数据，可以显著的降低CPU占用率，所以我们打算将XDP技术移植到Android上以提高移动设备千兆网络的处理能力。
 
-### About 4G
 
-4G指的是**第四代移动通信技术**，是3G之后的衍生。
-
-#### Definition
-
-从技术标准的角度看，按照[ITU](https://zh.wikipedia.org/wiki/ITU)的定义，静态传输速率达到1Gbps，用户在高速移动状态下可以达到100Mbps，就可以作为4G的技术之一。
-
-从[运营商](https://zh.wikipedia.org/wiki/%E7%94%B5%E4%BF%A1%E8%BF%90%E8%90%A5%E5%95%86)的角度看，除了与现有网络的可兼容性外，4G要有更高的数据吞吐量、更低时延、更低的建设和运行维护成本、更高的鉴权能力和安全能力、支持多种[QoS](https://zh.wikipedia.org/wiki/QoS)等级。
-
-从融和的角度看，4G意味着更多的参与方，更多技术、行业、应用的融合，不再局限于电信行业，还可以应用于金融、医疗、教育、交通等行业；通信终端能做更多的事情，例如除语音通信之外的多媒体通信、远端控制等；或许局域网、互联网、电信网、广播网、卫星网等能够融为一体组成一个通播网，无论使用什么[终端](https://zh.wikipedia.org/wiki/%E7%B5%82%E7%AB%AF)，都可以享受高质量的信息服务，向宽带无线化和无线宽带化演进，使4G渗透到生活的方方面面。
-
-从用户需求的角度看，4G能为用户提供更快的速度并满足用户更多的需求。移动通信之所以从模拟到数字、从[2G](https://zh.wikipedia.org/wiki/2G)到4G以及将来的xG演进，最根本的推动力是用户需求由无线语音服务向无线多媒体服务转变，从而激发营运商为了提高[ARPU](https://zh.wikipedia.org/wiki/ARPU)、开拓新的频段支持用户数量的持续增长、更有效的[频谱](https://zh.wikipedia.org/wiki/%E9%A2%91%E8%B0%B1)利用率以及更低的营运成本，不得不进行变革转型。
-
-#### Specifications
-
-ITU的4G标志制定如下：
-
-- 基于全[IP](https://zh.wikipedia.org/wiki/IP)（All IP）分组交换网络。
-- 在高速移动性的环境下达到约100 Mbit/s的速率，如移动接入；在低速移动性的环境下高达约1 Gbit/s的速率，例如游牧/固定无线网络接入的峰值数据速率。
-- 能够动态地共享和利用网络资源来支持每单元多用户同时使用。
-- 使用5-20MHz可扩展的信道带宽，任选高达40 MHz。
-- 链路频谱效率的峰值为15 bit/s/Hz（下行）和6.75 bit/s/Hz（上行）（即1 Gbit/s的下行链路中应该是可能超过小于67 MHz的带宽）。
-- 系统的频谱效率下行高达3 bit/s/Hz/cell 和在室内2.25 bit/s/Hz/cell。
-- 跨不同系统网络的平滑切换。
-- 提供高质量的服务QoS(Quality of Service)，为支持新一代的多媒体传输能力。
-
-### About 5G
-
-5G指的是**第五代移动通信技术**，是4G之后的衍生。
-
-#### 5G concepts and prospects
-
-5G与4G相比，概念是连线容量有着巨大提升，并仰赖物联网的需求而建设成形。届时所有物品之间的链接均可容纳，举个直观一点的例子，就是除了电源，外部链接线均可以剪掉。8K电视与高端音响不再需要视频与音频线而能直接联上服务，PC只剩下键盘与鼠标，算力是进行订阅选配的套餐制，透过云服务将会更深度的集成到所有家电中，家电全面联网远程控制、声控的时代也将成为现实，街头上动态交通信号量得以出现、监控镜头也将为非固定式、行车纪录不再需要本地存储等等。以上均是5G的基本利用场景。
-
-#### Specifications
-
-下一代移动网络联盟（Next Generation Mobile Networks Alliance）定义了5G网络的以下要求：
-
-- 以10Gbps的数据传输速率支持数万用户；
-- 以1Gbps的数据传输速率同时提供给在同一楼办公的许多人员；
-- 支持数十万的并发连接以用于支持大规模传感器网络的部署；
-- 频谱效率应当相比4G被显著增强；
-- 覆盖率比4G有所提高；
-- 信令效率应得到加强；
-- 延迟应显著低于LTE。
-
-#### 4G vs 5G
-
-4G 和 5G 之间有多种差异：
-
-- 5G 是一个统一平台，功能比 4G 更强大
-- 5G 使用的频谱优于 4G
-- 5G 的速度比 4G 更快
-- 5G 的网络容量比 4G 更大
-- 5G 的延迟比 4G 更低
-
-##### Frequency
-
-从低于 1 GHz 的低频段到 1 GHz 至 6 GHz 的中频段，再到被称为毫米波的高频段，5G 还将充分利用各种可用频谱管理范式和频段中的每一个频谱。
-
-##### Speed
-
-5G 将在 4G 的基础上显著提速，达到 20 千兆/秒的峰值数据传输速率和超过 **100 兆/秒**的平均数据传输速率。
-
-##### Bandwidth
-
-5G 的流量容量和网络效率将提高 100 倍。
-
-##### latency
-
-5G 的延迟将大幅下降，以提供更即时的实时访问：端到端延迟降低 10 倍至 1 毫秒。
-
-##### Conclusion
-
-移动通信技术的发展和进步，对移动互联网最为直观的影响便是网速越来越快。
-
-从2G的100Kbps、3G的2Mbps到4G的100Mbps、5G的1Gbps。网速有了近万倍的提升，但同时也对移动终端的网络性能带来了不小的挑战。
-
-![1553948923816](assets/1553948923816.png)
 
 ### Future of Network (2017-2022)
 
@@ -814,7 +1054,15 @@ ITU的4G标志制定如下：
 > - **局部性失效**：如今主流的处理器都是多个核心的，这意味着一个数据包的处理可能跨多个 CPU 核心，比如一个数据包可能中断在 cpu0，内核态处理在 cpu1，用户态处理在 cpu2，这样跨多个核心，容易造成 CPU 缓存失效，造成局部性失效。如果是 NUMA 架构，更会造成跨 NUMA 访问内存，性能受到很大影响。
 > - **内存管理**：传统服务器内存页为 4K，为了提高内存的访问速度，避免 cache miss，可以增加 cache 中映射表的条目，但这又会影响 CPU 的检索效率。
 
-智能手机中，安卓手机占比超过七成。而根据我们的粗略的测试结果得出的结论，目前Android手机SoC对百兆流量还能够轻松应对 ，但是并不能有效的应对5G下千兆网络，手机SoC还特别重视能耗比和发热量，所以非常有必要提高手机千兆网络的处理能力。所以我们打算将一些linux上提高网速性能的技术移植到安卓设备上，提高安卓设备的高性能网络的处理能力。
+
+
+随着移动通信技术和移动互联网的发展，移动设备网络带宽得到显著提高，移动手机产生、处理越来越多的网络流量，囿于基于OS kernel的传统网络数据包处理的弊端，高性能网络处理占用了大量的CPU资源，尤其是在CPU计算资源受限制的移动设备上。我们计划为android移动设备搭建一个高效的XDP应运开发平台，为android提供一个高性能、可编程的网络数据通路。
+
+
+
+## Related work
+
+[Android上eBPF的流量监控](Android上eBPF的流量监控.md)
 
 ## Reference
 
