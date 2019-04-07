@@ -294,7 +294,7 @@ Android HAL经过几年的发展，已经进化出了一个比较完善的架构
 
 ![](assets/hal-architecture.PNG)
 
-在如图所示的 HAL 架构中，HAL模块中的核心代码任然没有改变，只是加了一些新的 HAL 架构要求的入口代码，使这些程序库可以自动被 Android 西戎识别。而调用HAL模块的代码并不需要直接装载.so文件（在这里叫做Stub）。在Stub和JNI之间还有一层 Service 程序库（.so文件），该层的库文件使用Android系统提供的调用HAL的机制访问 HAL 中的 Service 程序库。然后 Android 应用程序再调用 Service 程序库。虽然目前很多基于 Android 的 Linux 驱动已使用了新的 HAL 架构。但为了保持兼容性，旧的HAL架构任然支持。
+在如图所示的 HAL 架构中，HAL模块中的核心代码任然没有改变，只是加了一些新的 HAL 架构要求的入口代码，使这些程序库可以自动被 Android 系统识别。而调用HAL模块的代码并不需要直接装载.so文件（在这里叫做Stub）。在Stub和JNI之间还有一层 Service 程序库（.so文件），该层的库文件使用Android系统提供的调用HAL的机制访问 HAL 中的 Service 程序库。然后 Android 应用程序再调用 Service 程序库。虽然目前很多基于 Android 的 Linux 驱动已使用了新的 HAL 架构。但为了保持兼容性，旧的HAL架构仍然支持。
 
 #### Google为Android加入HAL的目的
 
