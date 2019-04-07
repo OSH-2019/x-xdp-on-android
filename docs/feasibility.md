@@ -1,12 +1,14 @@
+# feasibility report
+
 [TOC]
 
-#	项目简介
+## 项目简介
 
 随着移动通信技术和移动互联网的发展，移动设备网络带宽得到显著提高，移动手机产生、处理越来越多的网络流量，囿于基于OS kernel的传统网络数据包处理的弊端，高性能网络处理占用了大量的CPU资源，尤其是在CPU计算资源受限制的移动设备上。本项目旨在为android移动设备搭建一个高效的XDP应用开发平台，为android提供一个高性能、可编程的网络数据通路。
 
-# 项目背景
+## 项目背景
 
-## 基于OS内核的传统数据传输的弊端
+### 基于OS内核的传统数据传输的弊端
 
 如下，是 linux 的网络架构。
 
@@ -28,9 +30,7 @@
 4. **局部性失效。**如今主流的处理器都是多个核心的，这意味着一个数据包的处理可能跨多个 CPU 核心，比如一个数据包可能中断在 cpu0，内核态处理在 cpu1，用户态处理在 cpu2，这样跨多个核心，容易造成 CPU 缓存失效，造成局部性失效。如果是 NUMA 架构，更会造成跨 NUMA 访问内存，性能受到很大影响。
 5. **内存管理。**传统服务器内存页为 4K，为了提高内存的访问速度，避免 cache miss，可以增加 cache 中映射表的条目，但这又会影响 CPU 的检索效率。
 
-
-
-## 移动设备将贡献越来越多的网络流量
+### 移动设备将贡献越来越多的网络流量
 
 在全球范围内，在网设备数目将会继续飞速增长，智能手机，物联网设备等保有量都会有巨大的提高。
 
@@ -40,11 +40,9 @@
 
 ![](assets/1553950689773.png)
 
+### eBPF/XDP技术
 
-
-## eBPF/XDP技术
-
-### 简介
+#### 简介
 
 BPF：柏克莱封包过滤器，是数据链路层的一种原始接口，提供原始链路层封包的收发，还可以对驱动支持洪泛模式的网卡处于此种模式，以收到网络上的所有包。
 
@@ -59,7 +57,7 @@ BPF最初由从用户空间注入到内核的一个简单的字节码构成，�
 
 基于BPF的全新设计的eBPF，一方面，eBPF在内核追踪（Kernel Tracing），应用性能调优调控等领域有了较大的变革；另一方面，在接口的设计和易用性上，eBPF也有了较大改进。他还应用于网络编程领域，以一种高效的方式执行各种包处理任务。
 
-### XDP
+#### XDP
 
 不同于传统linux内核对报文的低效率处理，XDP在linux网络栈中加了新的一层，在报文到达CPU的最早时刻进行处理，甚至避免了`skb`的分配，从而减少了内存拷贝上的负荷。
 
@@ -69,13 +67,11 @@ XDP通过eBPF提供了一套十分灵活的可编程解决方案。它将可编�
 
 这样，XDP跳过了一些网络处理层，在很早的阶段对packet进行了处理。它直接操作DMA(Direct Memory Access) buffer，还没有为packet分配`skb`空间。同时XDP没有内存分配，进一步提高了效率。
 
+## 理论依据
 
+### XDP技术
 
-#	理论依据
-
-## XDP技术
-
-###	linux中数据包的收发过程
+#### linux中数据包的收发过程
 
 ![v2-3fa9720311fce5e2c6b0fc9bbaa79fa5_r](assets/v2-3fa9720311fce5e2c6b0fc9bbaa79fa5_r.jpg)
 
@@ -83,7 +79,7 @@ XDP通过eBPF提供了一套十分灵活的可编程解决方案。它将可编�
 
 通过上面两张图我们可以大致清楚数据包的一个完整的收发过程，可以看到整个处理链路还是比较长的，且需要在内核态与用户态之间做内存拷贝、上下文切换、软硬件中断等。处理大量的数据包会占用CPU大部分资源，难以满足人们对高性能网络的追求。
 
-###	DPDK中数据包收发过程
+#### DPDK中数据包收发过程
 
 为了解决上诉问题，DPDK应运而生。
 
@@ -93,7 +89,7 @@ XDP通过eBPF提供了一套十分灵活的可编程解决方案。它将可编�
 
 DPDK拦截中断，不触发后续中断流程，并绕过内核协议栈，通过UIO（Userspace I/O）技术将网卡收到的报文拷贝到应用层处理，报文不再经过内核协议栈。减少了中断，DPDK的包全部在用户空间使用内存池管理，内核空间与用户空间的内存交互不用进行拷贝，只做控制权转移，减少报文拷贝过程，提高报文的转发效率。
 
-###	XDP
+#### XDP
 
 ![](assets/v2-d53b35c10b3d9edf1ef03b48a1393f54_r.jpg)
 
@@ -108,14 +104,14 @@ DPDK通过UIO技术，提供了一种Kernel-bypass的高性能数据包处理方
 
 XDP设计背后的理念就是在保证安全性和系统其余部分完整性的前提下，与操作系统内核协同，进行高性能包处理。
 
-####	XDP 相对传统数据包处理的优点
+##### XDP 相对传统数据包处理的优点
 
 * 在数据包进入网络栈之前提前进行处理，减少了网络栈的包处理压力，减少数据包处理对CPU的资源开销
 * 提供了一种高性能、可编程的网络数据通路。
 * 允许灵活地构建集成到内核中的工作负载。
 * 避免了为packet分配`skb`空间，同时没有内存分配，进一步提高了效率。
 
-####	XDP 相对DPDK的优点
+##### XDP 相对DPDK的优点
 
 - XDP能够重用所有上游开发的内核网络驱动程序，用户空间工具，甚至其他可用的内核基础设施，如路由表，套接字等。
 - 驻留在内核空间中，XDP与内核的其余部分具有相同的安全模型，用于访问硬件。
@@ -126,51 +122,48 @@ XDP设计背后的理念就是在保证安全性和系统其余部分完整性�
 - 不需要将CPU显式专用于XDP。 没有特殊的硬件要求，也不依赖于大页面。
 - XDP不需要任何第三方内核模块或许可。它是一个长期的架构解决方案，是Linux内核的核心部分，由内核社区开发。
 
-
-
 在CPU计算能力受限的Android平台上，采用XDP技术既能提供高性能、可编程的网络数据通路，同时还可以避免Kernel-bypass带来的系统安全风险。
 
+## 技术依据
 
+### LLVM & clang
 
-# 技术依据
+XDP 程序的编译依赖于 LLVM 提供的编译后端和 Clang 编译器。
 
-## LLVM & clang on android
-### 简介
-#### LLVM
+#### 简介
+##### LLVM
 * LLVM用C++编写，是专为以任意编程语言编写的程序的编译时，链接时，运行时和“空闲时”优化而设计的编译框架，可以用于编译Ruby，Python，Haskell，Java，D，PHP，Pure，Lua和许多其他语言。
 * LLVM的主要优势在于其多功能性，灵活性和可重用性
 * LLVM是如今唯一支持BPF后端的编译器。（LLVM 3.7版本即支持BPF，4.0即可将调试信息存入目标文件，从LLVM的6.0版开始，还有汇编程序解析器支持）
 
-#### clang
+##### clang
 * Clang 是一个C、C++、Objective-C 和 Objective-C++ 编程语言的编译器，采用底层虚拟机（LLVM）作为后端。
 * Clang 是一个高度模块化开发的轻量级编译器，编译速度快、占用内存小、有着友好的出错提示。
 * 在本项目中，Clang用于将C语言代码转换成BPF字节码。
 
-### on android
+#### On Android
 * 目前android NDK已经支持clang（which use llvm），所以可以在android中使用clang将c语言代码转换成bpf字节码。
 (关于android NDK的更多信息见下文)
 
-## Android NDK
-### 简介
+### Android NDK
+#### 简介
 Android NDK（Native Development Kit）是一个工具集，可让用户使用C和C++等语言以本机代码实现应用程序的各个部分。
-### 应用场景
+#### 应用场景
 * 在平台之间移植应用
 * 重用现有库，或提供自己的库以供重用。
 * 在某些情况下提高性能，特别是像游戏这样的计算密集型。 
-### clang与NDK
+#### clang与NDK
 从r19版本后，所有NDK的工具链均使用clang作为编译器，clang和clang++取代了gcc和g++。
 
+### eBPF on Android
 
-
-## eBPF on Android
-
-### 概览
+#### 概览
 
 在Android上包含一个 eBPF 加载程序和库，它会在 Android 启动时加载 eBPF 程序以扩展内核功能，这可用于从内核收集统计信息，进行监控或调试。
 
 eBPF是一个内核内部的虚拟机，可运行用户提供的 eBPF 程序。这些程序可以通过 hook 接入内核中的探测点或事件、收集有用的统计信息，并将结果存储在多个数据结构中。程序通过 `bpf(2)` 系统调用加载到内核中，并作为 eBPF 机器指令的二进制 blob 由用户提供。Android 编译系统支持使用简单编译文件语法将 C 程序编译到 eBPF。
 
-### 实现
+#### 实现
 
 Android对eBPF程序的加载通过以下三个过程实现：
 
@@ -178,7 +171,7 @@ Android对eBPF程序的加载通过以下三个过程实现：
 
    编写eBPF C程序，其格式如下：
 
-   ```
+   ```c
    #include <bpf_helpers.h>
    
    <... define one or more maps in the maps section, ex:
@@ -231,155 +224,74 @@ Android对eBPF程序的加载通过以下三个过程实现：
    - 对于任何已创建的映射，假设 `MAPNAME` 是映射的名称，而 `PROGNAME`是 eBPF C 文件的名称，则 Android 加载程序会创建每个映射并将其固定到 `/sys/fs/bpf/map_FILENAME_MAPNAME`。
    - Android BPF 库中的 `bpf_obj_get()` 可用于从这些固定的 `/sys/fs/bpf` 文件中获取文件描述符。此函数会返回文件描述符，该描述符可用于进一步执行操作（例如读取映射或将程序附加到跟踪点）。
 
-### Android BPF库
+#### Android BPF库
 
 Android BPF 库名为 `libbpf_android.so`，属于系统映像的一部分。该库向用户提供了一些 eBPF 功能：
 
 - 创建和读取映射
 - 创建探测点、跟踪点、性能缓冲区
 
-#### 将程序附加到跟踪点和 kprobe
+##### 将程序附加到跟踪点和 kprobe
 
 跟踪点和 kprobe 程序加载完成后（如前所述，会在启动时自动完成），需要激活。要激活它们，首先使用 `bpf_obj_get()` API 从固定文件的位置获取程序 fd，接下来，调用 BPF 库中的 `bpf_attach_tracepoint()` API，将程序 fd 和跟踪点名称传递给该 API。
 
-#### 从映射中读取数据
+##### 从映射中读取数据
 
 BPF 映射支持任意复杂的键和值结构或类型。Android BPF 库包含一个 `android::BpfMap` 类，该类利用 C++ 模板根据相关映射的键和值类型来实例化 `BpfMap`。
 
-#### 示例：eBPF在Android上的流量监控
+##### 示例：eBPF在Android上的流量监控
 
-[Android上eBPF的流量监控](Android上eBPF的流量监控.md)
+[Android上eBPF的流量监控](Android-eBPF-flow-monitor.md)
 
+### Android HAL架构
 
+#### 简介
 
-## Android HAL架构
+Android HAL(Hardware Abstract Layer, 硬件抽象层)，是 Google 为维护厂家利益加的一层，也是使 Android 很难说是完全开源的一层。通过 HAL，厂家将驱动的关键部分隐藏，只在内核中留下硬件驱动中基本的访问接口。同时，当内核中的驱动运行在内核空间的同时，HAL 层的驱动运行在用户空间。
 
 Android HAL发展之初的架构
-![](../../../Documents/Tencent%20Files/1076745417/FileRecv/assets/%E6%8D%95%E8%8E%B7.PNG)
+![](assets/arch.png)
 Android HAL经过几年的发展，已经进化出了一个比较完善的架构。
 
-![](../../../Documents/Tencent%20Files/1076745417/FileRecv/assets/hal%20architecture.PNG)
+![](assets/hal-architecture.PNG)
 
-在如图所示的HAL架构中，HAL模块中的核心代码任然没有改变，只是加了一些新的HAL架构要求的入口代码，使这些程序库可以自动被Android西戎识别。而调用HAL模块的代码并不需要直接装载.so文件（在这里叫做Stub）。在Stub和JNI之间还有一层Service程序库（.so文件），该层的库文件使用Android系统提供的调用HAL的机制访问HAL中的Service程序库。然后Android应用程序再调用Service程序库。虽然目前很多基于Android的Linux驱动已使用了新的HAL架构。但为了保持兼容性，旧的HAL架构任然支持。
+在如图所示的 HAL 架构中，HAL模块中的核心代码任然没有改变，只是加了一些新的 HAL 架构要求的入口代码，使这些程序库可以自动被 Android 西戎识别。而调用HAL模块的代码并不需要直接装载.so文件（在这里叫做Stub）。在Stub和JNI之间还有一层 Service 程序库（.so文件），该层的库文件使用Android系统提供的调用HAL的机制访问 HAL 中的 Service 程序库。然后 Android 应用程序再调用 Service 程序库。虽然目前很多基于 Android 的 Linux 驱动已使用了新的 HAL 架构。但为了保持兼容性，旧的HAL架构任然支持。
 
-### Google为Android加入HAL的目的
+#### Google为Android加入HAL的目的
 
 - 统一硬件的调用接口。由于HAL有标准化的调用接口，所以可以利用HAL屏蔽Linux驱动复杂、不统一的接口。
-- 解决了GPL版权问题。由于Linux内核基于GPL协议，加HAL时一些敏感代码摆脱了GPL的束缚，不必开源。
+- 解决了GPL版权问题。由于Linux内核基于GPL协议，是完全开源的，因此要求linux上的驱动也开源。为了使Android平台的厂商摆脱掉开源对商业上利益的影响，加上HAL，使一些敏感代码摆脱了GPL的束缚，不必开源。
 - 针对一些特殊的要求。对于有些硬件，可能需要访问一些用户空间的资源，或在内核空间不方便完成的工作以及特殊需求，可用HAL代码来辅助linux驱动完成一些工作。
 
+#### HAL 特点
 
+- **用户空间**：Android 将驱动中的关键部分移到了 HAL 层，导致了驱动的大部分运行在用户空间，而不再是在内核中。
+- **闭源**：HAL 层的驱动是闭源的。
+- **层次性**：为开发底层功能，从下开始支持某一硬件，需要从内核中的驱动开始，到 HAL 层，再到 JNI 层，分别编写接口。导致了 Android 驱动开发的复杂性。
 
-我们之后的工作可能涉及撰写网卡驱动，HAL为Android驱动开发提供了便利。
+#### HAL 层该项目可行性的影响
 
+- 由于 Android 设备上网卡驱动与 linux 的不一致，而 XDP 又依赖于驱动支持，所以我们的工作可能涉及到内核中驱动的移植。
 
+- 同时，HAL 层的闭源性带来了移植驱动的麻烦。
 
-# 技术路线
+- 另一方面，XDP 是完全运行在内核态的，HAL 层在用户空间，导致了两者注定不兼容。
 
+##### 解决方案
 
+HAL 层带来的问题是可以解决的。
 
+事实上，HAL 层对于驱动并不是必须的，许多 Android 设备中驱动的实现并未经过HAL，我们完全可以在内核中实现驱动，并绕过 HAL 层，直接在 JNI 层提供接口进行访问。我们称其为 "HAL Bypass".
 
+同时，为了提供对 XDP 的支持，从头开始写驱动并不是必须的。我们完全可以将最新版本的 linux 内核中的驱动进行移植，或者参考已有的驱动实现，来再 Android 设备上实现 XDP 所需要的 hook。
 
+## 技术路线
 
 
+## 参考资料
 
+1. [wiki-LLVM](https://en.wikipedia.org/wiki/LLVM&prev=search)
 
+2. [wiki-clang](https://en.wikipedia.org/wiki/Clang&prev=search)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 参考资料
-
-1.[wiki-LLVM](https://en.wikipedia.org/wiki/LLVM&prev=search)
-
-2.[wiki-clang](https://en.wikipedia.org/wiki/Clang&prev=search)
-
-3.[Android NDK](https://developer.android.com/ndk/guides/standalone_toolchain.html)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+3. [Android NDK](https://developer.android.com/ndk/guides/standalone_toolchain.html)
