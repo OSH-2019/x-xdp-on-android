@@ -1,6 +1,63 @@
 # feasibility report
 
-[TOC]
+* [feasibility report](#feasibility-report)
+   * [项目简介](#项目简介)
+   * [项目背景](#项目背景)
+      * [基于OS内核的传统数据传输的弊端](#基于os内核的传统数据传输的弊端)
+      * [移动设备将贡献越来越多的网络流量](#移动设备将贡献越来越多的网络流量)
+      * [eBPF/XDP技术](#ebpfxdp技术)
+         * [简介](#简介)
+         * [XDP](#xdp)
+   * [理论依据](#理论依据)
+      * [XDP技术](#xdp技术)
+         * [linux中数据包的收发过程](#linux中数据包的收发过程)
+         * [DPDK中数据包收发过程](#dpdk中数据包收发过程)
+         * [XDP](#xdp-1)
+            * [XDP 相对传统数据包处理的优点](#xdp-相对传统数据包处理的优点)
+            * [XDP 相对DPDK的优点](#xdp-相对dpdk的优点)
+   * [技术依据](#技术依据)
+      * [QEMU-KVM](#qemu-kvm)
+         * [QEMU](#qemu)
+            * [优点](#优点)
+         * [KVM](#kvm)
+         * [QEMU-KVM](#qemu-kvm-1)
+         * [Android on QEMU](#android-on-qemu)
+            * [Why QEMU](#why-qemu)
+            * [依赖安装](#依赖安装)
+            * [磁盘镜像](#磁盘镜像)
+            * [系统安装](#系统安装)
+            * [系统运行](#系统运行)
+            * [Tools](#tools)
+      * [LLVM &amp; clang](#llvmclang)
+         * [简介](#简介-1)
+            * [LLVM](#llvm)
+            * [clang](#clang)
+         * [On Android](#onandroid)
+      * [Android NDK](#androidndk)
+         * [简介](#简介-2)
+         * [应用场景](#应用场景)
+         * [clang与NDK](#clang与ndk)
+      * [eBPF on Android](#ebpf-on-android)
+         * [概览](#概览)
+         * [实现](#实现)
+         * [Android BPF库](#android-bpf库)
+            * [将程序附加到跟踪点和 kprobe](#将程序附加到跟踪点和-kprobe)
+            * [从映射中读取数据](#从映射中读取数据)
+            * [示例：eBPF在Android上的流量监控](#示例ebpf在android上的流量监控)
+      * [Android HAL架构](#android-hal架构)
+         * [简介](#简介-3)
+         * [Google为Android加入HAL的目的](#google为android加入hal的目的)
+         * [HAL 特点](#hal-特点)
+         * [HAL 层该项目可行性的影响](#hal-层该项目可行性的影响)
+            * [解决方案](#解决方案)
+      * [Android JNI](#android-jni)
+         * [简介](#简介-4)
+         * [JNI的设计](#jni的设计)
+         * [JNI 层对项目的影响](#jni-层对项目的影响)
+   * [技术路线](#技术路线)
+      * [目的](#目的)
+      * [步骤](#步骤)
+   * [参考资料](#参考资料)
 
 ## 项目简介
 
@@ -462,8 +519,7 @@ native 代码可以通过调用 JNI function 来访问 Java 虚拟机的特有�
 
 2. 改写 Android 内核中 Linux 内核部分的驱动程序，增加 XDP 的支持。此步可能涉及将最新版的 virtio-net 等网卡驱动移植到 Android 内核中，也可能涉及 Android 更高层，如绕过 HAL 层编写驱动、在 JNI 层实现接口。
 
-
-## 参考资料
+## 参考资料
 
 1. [wiki-LLVM](https://en.wikipedia.org/wiki/LLVM&prev=search)
 2. [wiki-clang](https://en.wikipedia.org/wiki/Clang&prev=search)
