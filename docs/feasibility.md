@@ -1,45 +1,63 @@
 # feasibility report
 
-   * [feasibility report](#feasibility-report)
-      * [项目简介](#项目简介)
-      * [项目背景](#项目背景)
-         * [基于OS内核的传统数据传输的弊端](#基于os内核的传统数据传输的弊端)
-         * [移动设备将贡献越来越多的网络流量](#移动设备将贡献越来越多的网络流量)
-         * [eBPF/XDP技术](#ebpfxdp技术)
-            * [简介](#简介)
-            * [XDP](#xdp)
-      * [理论依据](#理论依据)
-         * [XDP技术](#xdp技术)
-            * [linux中数据包的收发过程](#linux中数据包的收发过程)
-            * [DPDK中数据包收发过程](#dpdk中数据包收发过程)
-            * [XDP](#xdp-1)
-               * [XDP 相对传统数据包处理的优点](#xdp-相对传统数据包处理的优点)
-               * [XDP 相对DPDK的优点](#xdp-相对dpdk的优点)
-      * [技术依据](#技术依据)
-         * [LLVM &amp; clang](#llvmclang)
-            * [简介](#简介-1)
-               * [LLVM](#llvm)
-               * [clang](#clang)
-            * [On Android](#onandroid)
-         * [Android NDK](#androidndk)
-            * [简介](#简介-2)
-            * [应用场景](#应用场景)
-            * [clang与NDK](#clang与ndk)
-         * [eBPF on Android](#ebpf-on-android)
-            * [概览](#概览)
-            * [实现](#实现)
-            * [Android BPF库](#android-bpf库)
-               * [将程序附加到跟踪点和 kprobe](#将程序附加到跟踪点和-kprobe)
-               * [从映射中读取数据](#从映射中读取数据)
-               * [示例：eBPF在Android上的流量监控](#示例ebpf在android上的流量监控)
-         * [Android HAL架构](#android-hal架构)
-            * [简介](#简介-3)
-            * [Google为Android加入HAL的目的](#google为android加入hal的目的)
-            * [HAL 特点](#hal-特点)
-            * [HAL 层该项目可行性的影响](#hal-层该项目可行性的影响)
-               * [解决方案](#解决方案)
-      * [技术路线](#技术路线)
-      * [参考资料](#参考资料)
+* [feasibility report](#feasibility-report)
+   * [项目简介](#项目简介)
+   * [项目背景](#项目背景)
+      * [基于OS内核的传统数据传输的弊端](#基于os内核的传统数据传输的弊端)
+      * [移动设备将贡献越来越多的网络流量](#移动设备将贡献越来越多的网络流量)
+      * [eBPF/XDP技术](#ebpfxdp技术)
+         * [简介](#简介)
+         * [XDP](#xdp)
+   * [理论依据](#理论依据)
+      * [XDP技术](#xdp技术)
+         * [linux中数据包的收发过程](#linux中数据包的收发过程)
+         * [DPDK中数据包收发过程](#dpdk中数据包收发过程)
+         * [XDP](#xdp-1)
+            * [XDP 相对传统数据包处理的优点](#xdp-相对传统数据包处理的优点)
+            * [XDP 相对DPDK的优点](#xdp-相对dpdk的优点)
+   * [技术依据](#技术依据)
+      * [QEMU-KVM](#qemu-kvm)
+         * [QEMU](#qemu)
+            * [优点](#优点)
+         * [KVM](#kvm)
+         * [QEMU-KVM](#qemu-kvm-1)
+         * [Android on QEMU](#android-on-qemu)
+            * [Why QEMU](#why-qemu)
+            * [依赖安装](#依赖安装)
+            * [磁盘镜像](#磁盘镜像)
+            * [系统安装](#系统安装)
+            * [系统运行](#系统运行)
+            * [Tools](#tools)
+      * [LLVM &amp; clang](#llvmclang)
+         * [简介](#简介-1)
+            * [LLVM](#llvm)
+            * [clang](#clang)
+         * [On Android](#onandroid)
+      * [Android NDK](#androidndk)
+         * [简介](#简介-2)
+         * [应用场景](#应用场景)
+         * [clang与NDK](#clang与ndk)
+      * [eBPF on Android](#ebpf-on-android)
+         * [概览](#概览)
+         * [实现](#实现)
+         * [Android BPF库](#android-bpf库)
+            * [将程序附加到跟踪点和 kprobe](#将程序附加到跟踪点和-kprobe)
+            * [从映射中读取数据](#从映射中读取数据)
+            * [示例：eBPF在Android上的流量监控](#示例ebpf在android上的流量监控)
+      * [Android HAL架构](#android-hal架构)
+         * [简介](#简介-3)
+         * [Google为Android加入HAL的目的](#google为android加入hal的目的)
+         * [HAL 特点](#hal-特点)
+         * [HAL 层该项目可行性的影响](#hal-层该项目可行性的影响)
+            * [解决方案](#解决方案)
+      * [Android JNI](#android-jni)
+         * [简介](#简介-4)
+         * [JNI的设计](#jni的设计)
+         * [JNI 层对项目的影响](#jni-层对项目的影响)
+   * [技术路线](#技术路线)
+      * [目的](#目的)
+      * [步骤](#步骤)
+   * [参考资料](#参考资料)
 
 ## 项目简介
 
@@ -63,11 +81,11 @@
 
 其主要弊端体现在：
 
-1. **中断处理。**当网络中大量数据包到来时，会产生频繁的硬件中断请求，这些硬件中断可以打断之前较低优先级的软中断或者系统调用的执行过程，如果这种打断频繁的话，将会产生较高的性能开销。
-2. **内存拷贝。**正常情况下，一个网络数据包从网卡到应用程序需要经过如下的过程：数据从网卡通过 DMA 等方式传到内核开辟的缓冲区，然后从内核空间拷贝到用户态空间，在 Linux 内核协议栈中，这个耗时操作甚至占到了数据包整个处理流程的 57.1%。
-3. **上下文切换。**频繁到达的硬件中断和软中断都可能随时抢占系统调用的运行，这会产生大量的上下文切换开销。另外，在基于多线程的服务器设计框架中，线程间的调度也会产生频繁的上下文切换开销，同样，锁竞争的耗能也是一个非常严重的问题。
-4. **局部性失效。**如今主流的处理器都是多个核心的，这意味着一个数据包的处理可能跨多个 CPU 核心，比如一个数据包可能中断在 cpu0，内核态处理在 cpu1，用户态处理在 cpu2，这样跨多个核心，容易造成 CPU 缓存失效，造成局部性失效。如果是 NUMA 架构，更会造成跨 NUMA 访问内存，性能受到很大影响。
-5. **内存管理。**传统服务器内存页为 4K，为了提高内存的访问速度，避免 cache miss，可以增加 cache 中映射表的条目，但这又会影响 CPU 的检索效率。
+1. **中断处理**：当网络中大量数据包到来时，会产生频繁的硬件中断请求，这些硬件中断可以打断之前较低优先级的软中断或者系统调用的执行过程，如果这种打断频繁的话，将会产生较高的性能开销。
+2. **内存拷贝**：正常情况下，一个网络数据包从网卡到应用程序需要经过如下的过程：数据从网卡通过 DMA 等方式传到内核开辟的缓冲区，然后从内核空间拷贝到用户态空间，在 Linux 内核协议栈中，这个耗时操作甚至占到了数据包整个处理流程的 57.1%。
+3. **上下文切换**：频繁到达的硬件中断和软中断都可能随时抢占系统调用的运行，这会产生大量的上下文切换开销。另外，在基于多线程的服务器设计框架中，线程间的调度也会产生频繁的上下文切换开销，同样，锁竞争的耗能也是一个非常严重的问题。
+4. **局部性失效**：如今主流的处理器都是多个核心的，这意味着一个数据包的处理可能跨多个 CPU 核心，比如一个数据包可能中断在 cpu0，内核态处理在 cpu1，用户态处理在 cpu2，这样跨多个核心，容易造成 CPU 缓存失效，造成局部性失效。如果是 NUMA 架构，更会造成跨 NUMA 访问内存，性能受到很大影响。
+5. **内存管理**：传统服务器内存页为 4K，为了提高内存的访问速度，避免 cache miss，可以增加 cache 中映射表的条目，但这又会影响 CPU 的检索效率。
 
 ### 移动设备将贡献越来越多的网络流量
 
@@ -145,10 +163,10 @@ XDP设计背后的理念就是在保证安全性和系统其余部分完整性�
 
 ##### XDP 相对传统数据包处理的优点
 
-* 在数据包进入网络栈之前提前进行处理，减少了网络栈的包处理压力，减少数据包处理对CPU的资源开销
-* 提供了一种高性能、可编程的网络数据通路。
-* 允许灵活地构建集成到内核中的工作负载。
-* 避免了为packet分配`skb`空间，同时没有内存分配，进一步提高了效率。
+- 在数据包进入网络栈之前提前进行处理，减少了网络栈的包处理压力，减少数据包处理对CPU的资源开销
+- 提供了一种高性能、可编程的网络数据通路。
+- 允许灵活地构建集成到内核中的工作负载。
+- 避免了为packet分配`skb`空间，同时没有内存分配，进一步提高了效率。
 
 ##### XDP 相对DPDK的优点
 
@@ -165,32 +183,176 @@ XDP设计背后的理念就是在保证安全性和系统其余部分完整性�
 
 ## 技术依据
 
+### QEMU-KVM
+
+为了进行安卓上驱动开发和 XDP 测试，我们使用 QEMU-KVM 搭建 Android 虚拟环境。
+
+#### QEMU
+
+> QEMU is a generic and open source machine emulator and virtualizer.
+
+[QEMU](https://www.qemu.org/)（quick emulator）是一款由Fabrice Bellard等人编写的免费的可执行硬件虚拟化的（hardware virtualization）开源托管虚拟机（VMM）。
+
+QEMU是一个托管的虚拟机镜像，它通过动态的二进制转换，模拟CPU，并且提供一组设备模型，使它能够运行多种未修改的客户机OS，可以通过与KVM（kernel-based virtual machine开源加速器）一起使用进而接近本地速度运行虚拟机（接近真实计算机的速度）。
+
+QEMU还可以为user-level的进程执行CPU仿真，进而允许了为一种架构编译的程序在另外一中架构上面运行（借由VMM的形式）。
+
+事实上 Android 模拟器就是通过 QEMU 实现的。
+
+##### 优点
+
+- 能进行 Full System Emulation。
+- 支持SMP(Symmetric MultiProcessing)。
+- 广泛的外围设备支持。
+- 能借助 KVM 实现较高的效率。
+
+#### KVM
+
+KVM（**K**ernel-based **V**irtual **M**achine），顾名思义，是 linux 内核中提供的基础虚拟化设施，可将 linux 内核转化为一个虚拟机监视器。KVM 本身并不提供任何模拟，只是提供了 CPU 和内存的虚拟化。它暴露一个 `/dev/kvm` 接口，这个接口可被宿主机用来主要负责vCPU的创建，虚拟内存的地址空间分配，vCPU寄存器的读写以及vCPU的运行。
+
+KVM 在内核中是一个模块，为了使用 KVM。可以执行如下命令：
+
+```bash
+$ lsmod
+```
+
+来查看是否已启用了 KVM 支持。
+
+可以执行如下命令：
+
+```bash
+$ modprobe kvm
+```
+
+来启用 KVM。
+
+#### QEMU-KVM
+
+如上，KVM 本身并不执行任何模拟，QEMU 本身只提供部分虚拟化，因此可以通过 QEMU 加 KVM 实现系统的完全虚拟化。
+
+- KVM 运行在内核空间。由 KVM 提供 CPU 和内存的虚拟化，guest os 的CPU指令不用再经过QEMU来转译便可直接运行，大大提高了运行速度。
+- QEMU 运行在用户空间。负责提供设备的模拟。
+
+现在，QEMU 已提供了 KVM Hosting，用以加快模拟的效率。通过 `-enable-kvm` 或 `-machine accel=kvm` 即可开启全系统模拟和 kvm 加速的支持。
+
+如下是 QEMU 和 KVM 的关系：![img](assets/3143954-cdde1444c6a86c60.png)
+
+#### Android on QEMU
+
+##### Why QEMU
+
+为什么我们使用 QEMU 来搭建 Android 虚拟机？事实上使用 VBox 或 VMWare 等工具也可以搭建。不过使用 QEMU 能更灵活地模拟设备。对我们来说，使用 QEMU 能更灵活地选择我们想要的网卡以及包的转发等。我们通过`-nic`或`-device`等选项，能指定想要使用的网络设备。
+
+注意下面我们使用了 virtio-net，因为最新版的 virtio-net 驱动增添了对 XDP 的支持。
+
+如下，是我们使用 QEMU 在 ubuntu/ centos 等平台初步搭建 Android 虚拟机的方法。
+
+##### 依赖安装
+
+Centos:   
+
+```bash
+$ sudo yum install qemu-kvm qemu
+```
+
+Ubuntu:   
+
+```bash
+$ sudo apt install qemu
+```
+
+目前尚未尝试其它环境。
+
+##### 磁盘镜像
+
+```bash
+$ qemu-img create -f qcow2 android.img 10G
+```
+
+##### 系统安装
+
+```bash
+$ qemu-system-x86_64 -vga std \
+                   -m 2048 -smp 2 \
+                   -soundhw ac97 \
+                   -net nic,model=virtio -net user \
+                   -cdrom android-x86_64-8.1-r1.iso \
+                   -hda android.img \
+                   -boot d \
+                   -machine accel=kvm
+```
+
+上面重要的选项的意思是：
+
+- `-vga std`：选择 vga card 为默认设备。
+- `-boot d`：首先尝试从 cdrom 启动。
+- `-net nic,model=virtio -net user`：user privilege。NIC 设备驱动使用 virtio-net。初步决定使用 virtio-net 的原因是在最新版的 virtio-net 驱动实现中增加了对 XDP 的支持。
+- `-machine accel=kvm`：使用 kvm 加速。
+
+##### 系统运行
+
+```bash
+$ qemu-system-x86_64 -vga std \
+                   -m 2048 \
+                   -soundhw ac97 \
+                   -device virtio-net,netdev=net0 \
+                   -netdev user,id=net0,hostfwd=udp::9999-:9999 \
+                   -hda android.img \
+                   -monitor stdio \
+                   -vnc localhost:0 \
+                   -machine accel=kvm 
+```
+
+上面重要选项的意思是：
+
+- `-device virtio-net,netdev=net0`：指定 net0 设备，使用 virtio-net。
+- `-monitor stdio`：使用 `stdio` 作监视器。
+- `-netdev user,id=net0,hostfwd=udp::9999-:9999`：指定设备 id 为net0，用于`-device`。同时，将 host os 上 9999 端口的 udp packet 转发到 guest os 上的 9999 端口。
+- `-vnc localhost:0`：在主机的5900端口运行 VNC server，这样，通过 VNC Client 连接到5900端口可以获取界面。
+
+##### Tools
+
+在[这里](https://github.com/OSH-2019/x-xdp-on-android/tree/master/tool)我们提供了编写的工具，为了安装并运行虚拟机请输入如下命令：
+
+```bash
+$ ./qemu-install.sh /path/to/your/android/iso /path/to/image && \
+  ./qemu-run.sh /path/to/image
+```
+
 ### LLVM & clang
 
 XDP 程序的编译依赖于 LLVM 提供的编译后端和 Clang 编译器。
 
 #### 简介
 ##### LLVM
-* LLVM用C++编写，是专为以任意编程语言编写的程序的编译时，链接时，运行时和“空闲时”优化而设计的编译框架，可以用于编译Ruby，Python，Haskell，Java，D，PHP，Pure，Lua和许多其他语言。
-* LLVM的主要优势在于其多功能性，灵活性和可重用性
-* LLVM是如今唯一支持BPF后端的编译器。（LLVM 3.7版本即支持BPF，4.0即可将调试信息存入目标文件，从LLVM的6.0版开始，还有汇编程序解析器支持）
+
+- LLVM用C++编写，是专为以任意编程语言编写的程序的编译时，链接时，运行时和“空闲时”优化而设计的编译框架，可以用于编译Ruby，Python，Haskell，Java，D，PHP，Pure，Lua和许多其他语言。
+- LLVM的主要优势在于其多功能性，灵活性和可重用性
+- LLVM是如今唯一支持BPF后端的编译器。（LLVM 3.7版本即支持BPF，4.0即可将调试信息存入目标文件，从LLVM的6.0版开始，还有汇编程序解析器支持）
 
 ##### clang
-* Clang 是一个C、C++、Objective-C 和 Objective-C++ 编程语言的编译器，采用底层虚拟机（LLVM）作为后端。
-* Clang 是一个高度模块化开发的轻量级编译器，编译速度快、占用内存小、有着友好的出错提示。
-* 在本项目中，Clang用于将C语言代码转换成BPF字节码。
+
+- Clang 是一个C、C++、Objective-C 和 Objective-C++ 编程语言的编译器，采用底层虚拟机（LLVM）作为后端。
+- Clang 是一个高度模块化开发的轻量级编译器，编译速度快、占用内存小、有着友好的出错提示。
+- 在本项目中，Clang用于将C语言代码转换成BPF字节码。
 
 #### On Android
-* 目前android NDK已经支持clang（which use llvm），所以可以在android中使用clang将c语言代码转换成bpf字节码。
+
+- 目前android NDK已经支持clang（which use llvm），所以可以在android中使用clang将c语言代码转换成bpf字节码。
 (关于android NDK的更多信息见下文)
 
 ### Android NDK
+
 #### 简介
+
 Android NDK（Native Development Kit）是一个工具集，可让用户使用C和C++等语言以本机代码实现应用程序的各个部分。
+
 #### 应用场景
-* 在平台之间移植应用
-* 重用现有库，或提供自己的库以供重用。
-* 在某些情况下提高性能，特别是像游戏这样的计算密集型。 
+
+- 在平台之间移植应用
+- 重用现有库，或提供自己的库以供重用。
+- 在某些情况下提高性能，特别是像游戏这样的计算密集型。 
+
 #### clang与NDK
 从r19版本后，所有NDK的工具链均使用clang作为编译器，clang和clang++取代了gcc和g++。
 
@@ -294,7 +456,7 @@ Android HAL经过几年的发展，已经进化出了一个比较完善的架构
 
 ![](assets/hal-architecture.PNG)
 
-在如图所示的 HAL 架构中，HAL模块中的核心代码任然没有改变，只是加了一些新的 HAL 架构要求的入口代码，使这些程序库可以自动被 Android 西戎识别。而调用HAL模块的代码并不需要直接装载.so文件（在这里叫做Stub）。在Stub和JNI之间还有一层 Service 程序库（.so文件），该层的库文件使用Android系统提供的调用HAL的机制访问 HAL 中的 Service 程序库。然后 Android 应用程序再调用 Service 程序库。虽然目前很多基于 Android 的 Linux 驱动已使用了新的 HAL 架构。但为了保持兼容性，旧的HAL架构任然支持。
+在如图所示的 HAL 架构中，HAL模块中的核心代码任然没有改变，只是加了一些新的 HAL 架构要求的入口代码，使这些程序库可以自动被 Android 系统识别。而调用HAL模块的代码并不需要直接装载.so文件（在这里叫做Stub）。在Stub和JNI之间还有一层 Service 程序库（.so文件），该层的库文件使用Android系统提供的调用HAL的机制访问 HAL 中的 Service 程序库。然后 Android 应用程序再调用 Service 程序库。虽然目前很多基于 Android 的 Linux 驱动已使用了新的 HAL 架构。但为了保持兼容性，旧的HAL架构仍然支持。
 
 #### Google为Android加入HAL的目的
 
@@ -324,13 +486,47 @@ HAL 层带来的问题是可以解决的。
 
 同时，为了提供对 XDP 的支持，从头开始写驱动并不是必须的。我们完全可以将最新版本的 linux 内核中的驱动进行移植，或者参考已有的驱动实现，来再 Android 设备上实现 XDP 所需要的 hook。
 
+### Android JNI
+
+#### 简介
+
+JNI，是Java Native Interface的缩写，它提供了若干的API实现了Java和其他语言的通信（主要是C&C++）。通过这种技术可以做到以下两点：
+
+- Java程序中的函数可以调用Native语言写的函数，Native一般指的是C/C++编写的函数。
+- Native程序中的函数可以调用Java层的函数，也就是在C/C++程序中可以调用Java的函数。
+
+#### JNI的设计
+
+native 代码可以通过调用 JNI function 来访问 Java 虚拟机的特有功能。JNI 函数可以通过一个接口指针（interface pointer）来访问到。接口指针是指向指针的指针，它指向的指针（pre-thread JNI data stucture）又指向一个指针的列表，其中每个指针都指向一个接口函数（interface function）。
+![](assets/interface_pointer.png)
+
+#### JNI 层对项目的影响
+
+- 我们的项目可能涉及调用一些 Java 层的函数，这可以通过 java 层实现。
+- 同时，我们在驱动中实现 XDP 时可能需要绕过 HAL 层，直接提供接口给 JNI。我们需要在 JNI 实现原本应经过 HAL 层的 API。
+
 ## 技术路线
 
+### 目的
 
-##	参考资料
+在安卓平台上，从底层驱动开始，到 JNI 层，提供对 XDP 的支持。并且提供一个平台，能够以更方便的方式分发 XDP 程序。不必从 Android 内核编译开始来插入 XDP/ eBPF 程序。
+
+### 步骤
+
+1. 在上面搭建的 Android 虚拟机上，移植最新 Linux 内核中 XDP 的相关内容，解决库依赖等相关问题，并在 Generic mode 下运行并测试 XDP 程序。
+
+   *Generic mode* 是 XDP 的一种运行模式。在这种模式下，XDP 程序不需要驱动的支持，但会有性能损失。
+
+2. 改写 Android 内核中 Linux 内核部分的驱动程序，增加 XDP 的支持。此步可能涉及将最新版的 virtio-net 等网卡驱动移植到 Android 内核中，也可能涉及 Android 更高层，如绕过 HAL 层编写驱动、在 JNI 层实现接口。
+
+## 参考资料
 
 1. [wiki-LLVM](https://en.wikipedia.org/wiki/LLVM&prev=search)
-
 2. [wiki-clang](https://en.wikipedia.org/wiki/Clang&prev=search)
-
 3. [Android NDK](https://developer.android.com/ndk/guides/standalone_toolchain.html)
+4. [QEMU-KVM](https://www.jianshu.com/p/4e893b5bfe81)
+5. [QEMU Doc](https://qemu.weilnetz.de/doc/qemu-doc.html)
+6. [android x86 | qemu-howto](http://www.android-x86.org/documents/qemuhowto)
+7. Android深度探索，卷1 - HAL与驱动开发电子资源. 李宁，人民邮电出版社，2013
+8. Android系统源代码情景分析 (第三版). 罗升阳，电子工业出版社，2017
+9. Android底层开发技术实战详解: 内核、移植和驱动(第二版). 王振丽，电子工业出版社，2015
