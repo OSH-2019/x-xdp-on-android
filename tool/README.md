@@ -12,6 +12,8 @@
 
 ### Usage
 
+#### `qemu-install.sh`, `qemu-run.sh`
+
 ```shell
 ./qemu-install.sh android.x86_64.iso android.img
 ./qemu-run.sh android.img
@@ -22,3 +24,20 @@
 运行 `qemu-run.sh` 之后，终端的输入将成为 qemu 的控制器，并且将在 5900 号端口上运行 VNC Server。你需要 VNC Client 来获取图形界面。
 
 例如 Centos 上的 `vncviewer`。
+
+#### `connect_vnc.sh`
+
+此脚本使用了 remmina 作为 VNC Client，因为 remmina 在 Ubuntu 上是默认的 VNC Client。若你使用其它操作系统，请自行修改脚本。
+
+```shell
+./connect_vnc.sh username domain
+```
+
+在这之前，请先将 ssh 公钥拷贝到远程服务器上。推荐使用：
+
+```shell
+# if you haven't generated your key pair before
+ssh-keygen
+
+ssh-copy-id username@domain
+```
