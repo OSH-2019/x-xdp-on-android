@@ -27,13 +27,17 @@
 
 #### `connect_vnc.sh`
 
+若不想自己搭建，可以通过此脚本使用我在服务器上已经搭好的虚拟机。
+
 此脚本使用了 remmina 作为 VNC Client，因为 remmina 在 Ubuntu 上是默认的 VNC Client。若你使用其它操作系统，请自行修改脚本。
 
 ```shell
 ./connect_vnc.sh username domain
 ```
 
-在这之前，请先将 ssh 公钥拷贝到远程服务器上。推荐使用：
+之后只用在弹出的 remmina 界面中选择 VNC 作为协议，并输入 `localhost:5900` 即可。
+
+若无法连接到服务器，需要在运行脚本之前，将 ssh 公钥拷贝到远程服务器上。推荐使用：
 
 ```shell
 # if you haven't generated your key pair before
