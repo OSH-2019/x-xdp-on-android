@@ -21,3 +21,8 @@ x-xdp-on-android created by GitHub Classroom
 [第二次讨论](discussion/2.md)
 
 [第三次讨论](discussion/3.md)
+
+## Milestones
+
+1. Establish Android Virtual Machine. 2019.05.04
+2. Compiling and Running BPF Programs on Android. 2019.06.27
