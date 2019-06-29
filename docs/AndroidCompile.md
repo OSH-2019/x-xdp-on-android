@@ -206,4 +206,4 @@ adb shell #启动shell
 
 ![1561815122481](assets/1561815122481.png)
 
-[More details](<https://developer.android.com/studio/command-line/adb>)
+[More details about adb](<https://developer.android.com/studio/command-line/adb>)
