@@ -1,3 +1,23 @@
+   * [Android Compile](#android-compile)
+      * [Environment](#environment)
+         * [Hardware](#hardware)
+         * [Software](#software)
+      * [Setting up build environment](#setting-up-build-environment)
+         * [Requirements](#requirements)
+      * [Download source codes](#download-source-codes)
+         * [Install repo](#install-repo)
+         * [Initialize repo client](#initialize-repo-client)
+      * [Download the Android source tree](#download-the-android-source-tree)
+      * [Choose Android Version](#choose-android-version)
+      * [Compile](#compile)
+         * [Initialize build env](#initialize-build-env)
+         * [Select compilation target](#select-compilation-target)
+         * [Build](#build)
+      * [Run emulator](#run-emulator)
+      * [Interaction](#interaction)
+
+
+
 #	Android Compile
 
 ##	Environment
