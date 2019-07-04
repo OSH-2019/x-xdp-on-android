@@ -5,6 +5,7 @@
 - `./external/kernel-headers/original/uapi/linux/bpf.h`: original linux headers
 - `./bionic/libc/kernel/uapi/linux/bpf.h`: generated automatically, just a duplicate, no need to modify it
 - `./external/bcc`: BPF Compiler Collection
+- linux kernel (including BPF) is prebuilt into Android
 
 ### `netd.c`
 
