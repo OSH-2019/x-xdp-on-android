@@ -22,6 +22,12 @@ x-xdp-on-android created by GitHub Classroom
 
 [第三次讨论](discussion/3.md)
 
+## Where is the Source Code?
+
+You may wonder where we work on the code things. There are few commit histories about them. In fact, we commit our code in some other repositories, like [elfutils](https://kaleid-liner/elfutils) and [iproute2](https://kaleid-liner/iproute2). Then we import these as submodules to this repository. You may visit these repositories to see what we have changed.
+
+BTW, I forked these repositories from <https://android.googlesource.com> because you may not be able to visit this website in your area.
+
 ## Milestones
 
 1. Establish Android Virtual Machine. 2019.05.04
