@@ -1,0 +1,6 @@
+[submodule "src/elfutils"]
+	path = src/elfutils
+	url = https://github.com/kaleid-liner/elfutils
+[submodule "src/iproute2"]
+	path = src/iproute2
+	url = https://github.com/kaleid-liner/iproute2
