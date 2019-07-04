@@ -11,7 +11,7 @@ Android.bp 文件基本上是 Json 文件格式，对于每个 module，顶层�
 - `shared_libs`：链接动态库，如：
 
   ```json
-  cc_library: {
+  cc_library {
       shared_libs: [
           "libelf",
       ],
@@ -27,7 +27,7 @@ Android.bp 文件基本上是 Json 文件格式，对于每个 module，顶层�
   - `local_include_dirs`: 路径相对于此模块，对内部的引用，常用的例如:
 
     ```json
-    cc_library: {
+    cc_library {
         local_include_dirs: [
             "include",
             ".",
