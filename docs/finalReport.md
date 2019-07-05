@@ -186,27 +186,27 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
 
 1. Initialize build env
 
-```shell
-source ./build/envsetup.sh
-```
+   ```shell
+   source ./build/envsetup.sh
+   ```
 
 2. Select compilation target
 
-	```shell
-	lunch
-	```
+  ```shell
+  lunch
+  ```
 
-	因为我们组没有实体机用于测试，所以编译x86版本安卓，用模拟器运行
+  因为我们组没有实体机用于测试，所以编译x86版本安卓，用模拟器运行
 
-	```shell
-	lunch 22
-	```
+  ```shell
+  lunch 22
+  ```
 
 3. Build
 
-	```shell
-	m -j31
-	```
+  ```shell
+  m -j31
+  ```
 
 #### 3.1.5 Run emulator
 
@@ -474,7 +474,6 @@ cc_library {
 +       "//external/iproute2/lib",
     ],
 }
-
 ```
 
 一切解决。
@@ -791,13 +790,13 @@ Xdp程序加载有两种方法
 1. 使用iproute2工具将Xdp程序加载到kernel中运行
 2. 自己写相关的加载程序
 
-上述两种方法都依赖于`libelf`这个C语言库，在Android中没有其支持，请确保正常移植并能使用该库，详细过程参考------------
+上述两种方法都依赖于`libelf`这个C语言库，在Android中没有其支持，请确保正常移植并能使用该库     [solve_link](#3.2.4 How we find and solve the problem step by step?)
 
 > ELF object file access library
 >
 > 'Libelf' lets you read, modify or create ELF files in an architecture-independent way. The library takes care of size and endian issues, e.g. you can process a file for SPARC processors on an Intel-based system. This library is a clean-room rewrite of the System V Release 4 library and is supposed to be source code compatible with it. It was meant primarily for porting SVR4 applications to other operating systems but can also be used as the basis for new applications (and as a light-weight alternative to libbfd).
 
-同时两种方法都依赖Android kernel 支持 AF_ALG sockets，请[检测AF_ALG sockets](3.3.4 Detect availability of kernel's AF_ALG sockets)是否可用，若不可用请参考[定制Android内核](3.3 Customize Android kernel)，重新定制内核
+同时两种方法都依赖Android kernel 支持 AF_ALG sockets，请[检测AF_ALG sockets](#3.3.4 Detect availability of kernel's AF_ALG sockets)是否可用，若不可用请参考[定制Android内核](#3.3 Customize Android kernel)，重新定制内核
 
 ##### Usage of iproute2
 
@@ -808,9 +807,9 @@ ip link set dev em xdp obj xdp-example.o #xdp hook模式
 ip link set dev em xdpgeneric obj xdp-exampe.o #SKB-mode
 ```
 
-- 此处若出现`No ELF library support compiled in`错误，请参考[iproute2 定制](3.2 Link iproute2 against libelf on Android), 重新定制`iproute2`程序
+- 此处若出现`No ELF library support compiled in`错误，请参考[iproute2 定制](#3.2 Link iproute2 against libelf on Android), 重新定制`iproute2`程序
 
-- 此处若出现`Socket AF_ALG: Address family not support`，则是当前内核不支持该协议，请参考[rebuild Android kernel](3.3 Customize Android kernel)，定制你的安卓内核
+- 此处若出现`Socket AF_ALG: Address family not support`，则是当前内核不支持该协议，请参考[rebuild Android kernel](#3.3 Customize Android kernel)，定制你的安卓内核
 
 - 如执行成功，则再次执行`ip link`，则被绑定Xdp的网口，会显示`xdp`程序的字样。此时Xdp程序已经成功在内核中运行起来，你可根据Xdp程序功能进行测试
 
