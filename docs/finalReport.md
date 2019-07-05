@@ -1,14 +1,14 @@
 [TOC]
 
-#	结题报告
+#	Final Report
 
-##	1. 项目介绍
+##	1. Introduction
 
 本项目旨在将XDP移植至安卓平台，并进一步通过XDP在安卓上实现网络处理相关的应用。
 
 我们通过QEMU-KVM搭建了Android虚拟环境，解决了安卓环境下eBPF/XDP的库依赖问题，并运行了`SKB-mode`下的xdp程序。
 
-##	2. 立项依据
+##	2. Background
 
 随着移动通信技术和移动互联网的发展，移动设备网络带宽得到显著提高，移动终端产生、处理越来越多的网络流量。作为移动终端的主力军，Android设备囿于基于OS kernel的传统网络数据包处理的弊端，高性能网络处理占用了大量的CPU资源，尤其是在CPU计算资源受限制的移动终端、物联网终端上。
 
@@ -16,7 +16,7 @@
 
 因此我们将XDP移植至android平台，为android平台提供高效的包处理工具。
 
-## BPF on Android
+## BPF/eBPF Architecture on Android
 
 Android 上的 eBPF 的文档也十分不全面，基本上我们也是一边对照官方残缺的文档，一边阅读 Android 中存在的 BPF 程序源码，一边读 Android BPF 的实现源码来搞懂的。
 
@@ -68,11 +68,11 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
 
   在代码中访问时，可以用 `android::bpf::BpfMap`。`BpfMap` 的构造函数接受一个文件描述符作为参数。安卓的 `bpfloader` 在加载 BPF 程序的过程中，会将 map 对应的 section 放在 `/sys/fs/bpf/map_name_of_map` 中，所以可以通过 `bpf_obj_get` 得到该路径对应的 bpf 对象，再将其传给 BpfMap，就能通过 BpfMap 的高级类方法访问底层数据结构。
 
-##	3. Solve conflicts between Android and Xdp program
+##	3. Development Efforts
 
-### 3.1 Android Compile
+### 3.1 Build Android Source Tree
 
-#### 3.1.1 Environment
+#### 3.1.1 Environments
 
 * Hardware
   * Cpu： Intel(R) Xeon(R) Platinum 8153 CPU @ 2.00GHz × 2
@@ -83,7 +83,7 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
   * System：Ubuntu 18.10
   * Kernel：4.18.0-18-generic
 
-#### 3.1.2 Setting up build environment
+#### 3.1.2 Dependencies
 
 1. 硬件要求
 
@@ -119,8 +119,6 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
    sudo apt-get install libgl1-mesa-dev libxml2-utils xsltproc unzip m4
    sudo apt-get install lib32z-dev ccache
    ```
-
-
 
 #### 3.1.3 Download source codes
 
@@ -246,8 +244,6 @@ adb shell #启动shell
 ![1561815122481](assets/1561815122481.png)
 
 [More details about adb](<https://developer.android.com/studio/command-line/adb>)
-
-
 
 ### 3.2 Link iproute2 against libelf on Android
 
@@ -483,9 +479,7 @@ cc_library {
 
 值得一提的是，Android 的 iproute2 源码中有一些小 bug。在链接了 libelf 后，这些 bug 由于 `-DHAVE_ELF` 的定义暴露了出来。大概 Android 的开发者由于并没有考虑链接这两者，所以也没有进行代码测试吧。我们修改了这些小 bug，最后 iproute2 正常运行。 
 
-
-
-### 3.3 Customize Android kernel
+### 3.3 Customize linux kernel
 
 默认的Android内核可能不支持某些功能，例如我们默认使用的内核 `4.4.112`不支持
 
@@ -531,7 +525,7 @@ int main(){
 }
 ```
 
-#### 3.3.5 Find the special version of kernel we need
+#### 3.3.5 Determine the specific Linux kernel version
 
 用于运行Android镜像的Android emulator对内核版本特别敏感，具体体现在
 
@@ -632,7 +626,7 @@ int main(){
    emulator -kernel new_kernel_path
    ```
 
-#### 3.3.6 Begin to customize our special Android kernel for Xdp
+#### 3.3.6 Customize Linux kernel (of Android) for XDP
 
 这里需要指出Android prebuilt kernel中只启用了非常有限的内核功能，其默认内核连ipv6都不支持
 
@@ -689,11 +683,9 @@ int main(){
 emulator -kernel new_kernel_path
 ```
 
+## 4. Run XDP Programs (on Android)
 
-
-## 4. Run Xdp on Android
-
-### 4.1 Requirement
+### 4.1 Requirements
 
 - Successfully build Android source tree
 - Write correct format XDP/BPF program 
@@ -705,7 +697,7 @@ emulator -kernel new_kernel_path
   - Partitioning programs with tail calls.
   - Limited stack space of maximum 512 bytes.
 
-### 4.2 Compile our Xdp program
+### 4.2 Compile XDP programs
 
 确保已经建立起完善的Android环境
 
@@ -782,9 +774,7 @@ char _license[] SEC("license") = "GPL";
 
 6. 此时运行模拟器和Android shell，能够在`/system/etc/bpf` 中看到生成的xdp_drop.o文件
 
-
-
-#### 4.2.2 Load Xdp program
+#### 4.2.2 How to load
 
 Xdp程序加载有两种方法
 
@@ -822,7 +812,7 @@ ip link set dev em xdpgeneric obj xdp-exampe.o #SKB-mode
 ip link set dev em xdp off
 ```
 
-### 4.3 Run Xdp
+### 4.3 Run XDP programs
 
 使用`ping`命令对xdp_drop进行测试
 
@@ -830,7 +820,7 @@ ip link set dev em xdp off
 ping -w 1000 baidu.com
 ```
 
-- 未挂在xdp_drop前
+- 未挂载xdp_drop前
 
   ![1562315156489](assets/ping_baidu_before.png)
 
@@ -844,7 +834,7 @@ ping -w 1000 baidu.com
 
 可见xdp_drop程序已经能在kernel中正确发挥作用
 
-### 4.4 Debug
+### 4.4 Debug XDP programs
 
 Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `bpf_dbg.c`、 `bpf_jit_disasm.c`），根据版本不同，在 `$KERNEL_TOP/tools/net/`（直到 Linux 4.14）或者 `$KERNEL_TOP/tools/bpf/` 目录下面：
 
@@ -876,11 +866,9 @@ Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `
 
 [more details about bpf](https://cilium.readthedocs.io/en/v1.4/bpf/)
 
+##	Future works
 
-
-##	项目拓展
-
-本项目基本完成了预定任务，但是仍然有美中不足的地方。由于Android对Xdp的驱动支持还是一片空白，本项目是基于SKB-mode模式完成的。囿于本组组员水平不够高、对Android驱动开发不够熟悉、linux kernel理解不够深入和Android部分网卡驱动不开源的特殊性，在本学期内无法完成支持XDP的网卡驱动移植。如果后续还有机会，将会尝试移植支持XDP的网卡驱动至安卓上，实现XDP程序的满血版。
+本项目基本完成了预定任务，但是仍然有美中不足的地方。由于Android对XDP的驱动支持还是一片空白，本项目是基于SKB-mode模式完成的。囿于本组组员对Android驱动开发不够熟悉、linux kernel理解不够深入和Android部分网卡驱动不开源的特殊性，在本学期内无法完成支持XDP的网卡驱动移植。如果后续还有机会，将会尝试移植支持XDP的网卡驱动至安卓上，实现XDP程序的满血版。
 
 ##	项目展望
 
