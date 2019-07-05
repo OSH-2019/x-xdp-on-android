@@ -642,7 +642,6 @@ int main(){
 
    ```shell
    make menuconfig
-   
    ```
 
 2. 加载Android默认配置
@@ -650,10 +649,9 @@ int main(){
    ```shell
    cp $KERNEL_TOP/arch/x86/configs/x86_64_ranchu_defconfig 		$KERNEL_TOP
    make menuconfig
-   
    ```
 
-​	在menu中load `x86_64_ranchu_defconfig`
+   在menu中load `x86_64_ranchu_defconfig`
 
 3. 设置Kernel编译选项
 
@@ -673,14 +671,12 @@ int main(){
    ```shell
    #覆盖初始的Android 编译选项，推荐先进行备份
    cp $KERNEL_TOP/x86_64_ranchu_defconfig $KERNEL_TOP/arch/x86/configs/x86_64_ranchu_defconfig
-   
    ```
 
    编译
 
    ```shell
    ./$ANDROID_TOP/prebuilts/qemu-kernel/build-kernel.sh --arch=x86_64_ranchu --out=.
-   
    ```
 
    若编译过程出错，请确定Android SKD工具完整，并且编译选项没有冲突矛盾，部分编译失败情况可能由内核编译选项引起。
@@ -818,7 +814,7 @@ ip link set dev em xdpgeneric obj xdp-exampe.o #SKB-mode
 
 - 如执行成功，则再次执行`ip link`，则被绑定Xdp的网口，会显示`xdp`程序的字样。此时Xdp程序已经成功在内核中运行起来，你可根据Xdp程序功能进行测试
 
-  ![1562314652446](C:/Users/gpzlx/Desktop/x-xdp-on-android/docs/assets/xdp_set.png)
+  ![1562314652446](assets/xdp_set.png)
 
 卸载xdp程序
 
@@ -836,15 +832,15 @@ ping -w 1000 baidu.com
 
 - 未挂在xdp_drop前
 
-![1562315156489](C:/Users/gpzlx/Desktop/x-xdp-on-android/docs/assets/ping_baidu_before.png)
+![1562315156489](assets/ping_baidu_before.png)
 
 - 挂载xdp程序后
 
-  ![1562315241639](C:/Users/gpzlx/Desktop/x-xdp-on-android/docs/assets/ping_baidu_after.png)
+  ![1562315241639](assets/ping_baidu_after.png)
 
   这里由于测试之前ping baidu.con次数太多，baidu.com DNS解析出来的ip 地址已经被local缓存所以能够ping 出百度的ip地址。在之前的测试中，DNS解析都不可用
 
-  ![1562315388595](C:/Users/gpzlx/Desktop/x-xdp-on-android/docs/assets/ping_baidu_after1.png)
+  ![1562315388595](assets/ping_baidu_after1.png)
 
 可见xdp_drop程序已经能在kernel中正确发挥作用
 
