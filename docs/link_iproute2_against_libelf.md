@@ -31,13 +31,13 @@ iproute2 提供了一些非常有用的工具，能够加载 XDP 程序，并将
 
 ```diff
 cc_defaults {
-	name: "iproute2_defaults",
-	// --snippet--
-	cflags: [
-		// --snippet--
-+		"-DHAVE_ELF",
-	]
-   
+    name: "iproute2_defaults",
+    // --snippet--
+    cflags: [
+        // --snippet--
++       "-DHAVE_ELF",
+    ]
+    
 }
 ```
 
@@ -47,8 +47,8 @@ cc_defaults {
 
 ```diff
 cc_defaults {
-	// --snippet--
-+	include_dirs: ["external/elfutils/libelf"],
+    // --snippet--
++   include_dirs: ["external/elfutils/libelf"],
 }
 ```
 
@@ -86,12 +86,12 @@ subdirs = ["libelf"]
 
 ```diff
 cc_defaults {
-	name: "iproute2_defaults",
-	// --snippet--
-+	shared_libs: [
-+		"libbpf",
-+	]
-   
+    name: "iproute2_defaults",
+    // --snippet--
++   shared_libs: [
++       "libbpf",
++   ]
+    
 }
 ```
 
@@ -126,12 +126,12 @@ cc_library_shared {
 
 ```diff
 cc_defaults {
-	name: "libiprouteutil",
-	// --snippet--
-+	shared_libs: [
-+		"libbpf",
-+	]
-   
+    name: "libiprouteutil",
+    // --snippet--
++   shared_libs: [
++       "libbpf",
++   ]
+    
 }
 ```
 
@@ -164,7 +164,7 @@ cc_defaults {
 
 ```diff
 cc_library {
-	// --snippet--
+    // --snippet--
     target: {
         darwin: {
             enabled: false,
@@ -176,7 +176,7 @@ cc_library {
             ],
             shared: {
 -               enabled: false,
-+				enabled: true,
++               enabled: true,
             },
         },
     },
@@ -189,19 +189,19 @@ cc_library {
 
 ```diff
 cc_library_shared {
-	// --snippet--
+    // --snippet--
 -   shared_libs: [
--		"libelf",
--	],
-+	target: {
-+		android: {
-+			cflags: ["-DAndroid"],
-+			static_libs: ["libelf"],
+-       "libelf",
+-   ],
++   target: {
++       android: {
++           cflags: ["-DAndroid"],
++           static_libs: ["libelf"],
 +	    },
-+	    host: {
-+			shared_libs: ["libelf"],
-+	    },
-+	},
++       host: {
++           shared_libs: ["libelf"],
++       },
++   },
 }
 ```
 
@@ -223,7 +223,7 @@ cc_library {
         "//device/google/contexthub/util/nanoapp_postprocess",
         "//external/mesa3d",
         "//external/perf_data_converter",
-+      	"//external/iproute2/lib",
++       "//external/iproute2/lib",
     ],
 }
 ```
