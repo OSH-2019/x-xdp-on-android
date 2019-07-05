@@ -106,11 +106,7 @@ Xdp程序加载有两种方法
 
 同时两种方法都依赖Android kernel 支持 AF_ALG sockets，请检测AF_ALG sockets是否可用，若不可用请参考定制Android内核，重新定制内核
 
-####	Usage of 
-
-
-
-####	Iproute2
+####	Usage of iproute2
 
 加载xdp程序
 
