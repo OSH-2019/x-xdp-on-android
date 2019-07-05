@@ -1,10 +1,20 @@
 [TOC]
 
-#	解题报告
+#	结题报告
 
 ##	1. 项目介绍
 
-##	2. 理想依据
+本项目旨在将XDP移植至安卓平台，并进一步通过XDP在安卓上实现网络处理相关的应用。
+
+我们通过QEMU-KVM搭建了Android虚拟环境，解决了安卓环境下eBPF/XDP的库依赖问题，并运行了`SKB-mode`下的xdp程序。
+
+##	2. 立项依据
+
+随着移动通信技术和移动互联网的发展，移动设备网络带宽得到显著提高，移动终端产生、处理越来越多的网络流量。作为移动终端的主力军，Android设备囿于基于OS kernel的传统网络数据包处理的弊端，高性能网络处理占用了大量的CPU资源，尤其是在CPU计算资源受限制的移动终端、物联网终端上。
+
+ XDP是运行在linux内核中一个强大、可编程、高效的网络数据通路。它在提供高效的网络处理能力的同时，对CPU资源的占用较小。为以上问题提供了新的解决方案。
+
+因此我们将XDP移植至android平台，为android平台提供高效的包处理工具。
 
 ## BPF on Android
 
@@ -27,7 +37,7 @@ bpf {
 
 这样，程序会被编译到 `out/target/product/generic_x86_64/system/bpf/bpf_example.o` 中，这样，最后我们可以在运行 Android 的 /`system/bpf ` 中找到。值得一提的是，我们在使用 `m all` 或 `mma` 进行编译之后，需要在顶层目录输入 `make snod`，否则二进制文件可能不会打包到镜像中。`make snod` 的作用是重新打包生成 `system.img` 镜像。
 
-置于确认此程序是否运行起来，可以看 `/sys/fsbpf`。因为 bpf 会打开文件描述符，并将加载的程序放在那里。这和 linux 上的是一致的。
+至于确认此程序是否运行起来，可以看 `/sys/fsbpf`。因为 bpf 会打开文件描述符，并将加载的程序放在那里。这和 linux 上的是一致的。
 
 ### Difference between BPF on Android and Linux
 
@@ -191,22 +201,19 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
    ```
 
 2. Select compilation target
-
-  ```shell
-  lunch
-  ```
-
-  因为我们组没有实体机用于测试，所以编译x86版本安卓，用模拟器运行
-
-  ```shell
-  lunch 22
-  ```
+	```shell
+	lunch
+	```
+	因为我们组没有实体机用于测试，所以编译x86版本安卓，用模拟器运行
+	```shell
+	lunch 22
+	```
 
 3. Build
 
-  ```shell
-  m -j31
-  ```
+	```shell
+	m -j31
+	```
 
 #### 3.1.5 Run emulator
 
@@ -281,7 +288,6 @@ cc_defaults {
         // --snippet--
 +       "-DHAVE_ELF",
     ]
-    
 }
 ```
 
@@ -335,7 +341,6 @@ cc_defaults {
 +   shared_libs: [
 +       "libbpf",
 +   ]
-    
 }
 ```
 
@@ -375,7 +380,6 @@ cc_defaults {
 +   shared_libs: [
 +       "libbpf",
 +   ]
-    
 }
 ```
 
@@ -426,7 +430,6 @@ cc_library {
         },
     },
 }
-
 ```
 
 得到了一大堆错误。这也和我们预测的一致——它在 Android 架构下不编译成动态库肯定是有原因的，可能是一些依赖和这个库的可移植性的问题，我们不考虑解决这些问题，而决定换一条路。
@@ -449,14 +452,12 @@ cc_library_shared {
 +       },
 +   },
 }
-
 ```
 
 这样做的意思是，在 android 架构下通过静态链接链接 libelf，在 host 架构下通过动态链接链接 libelf。这样做之后我们得到了新的报错：
 
 ```
 module 'libiprouteutil' variant 'android_x86_64_static': depends on 'libelf' which is not visible to this module
-
 ```
 
 在解决这个报错的过程中我们走了许多歪路，就不提了。下面直接描述正确的做法：
@@ -877,7 +878,18 @@ Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `
 
 
 
-##	前景展望
+##	项目拓展
+
+本项目基本完成了预定任务，但是仍然有美中不足的地方。由于Android对Xdp的驱动支持还是一片空白，本项目是基于SKB-mode模式完成的。囿于本组组员水平不够高、对Android驱动开发不够熟悉、linux kernel理解不够深入和Android部分网卡驱动不开源的特殊性，在本学期内无法完成支持XDP的网卡驱动移植。如果后续还有机会，将会尝试移植支持XDP的网卡驱动至安卓上，实现XDP程序的满血版。
+
+##	项目展望
+
+在本项目的研究、移植过程中，还有以下发现：
+
+1. Android 虽然支持eBPF扩展，但其不够灵活多变，只能在开机的情况下自动加载BPF程序，一直运行直到设备关机，并且目前仅执行一些较为简单的任务，诸如流量监控，设备功率预测等
+2. 目前Android BPF程序执行过程没有针对性
+
+而我们所移植的XDP，可以很好的解决上述问题，提供高效可靠灵活、支持动态加载、具有针对性和泛化性的网络编程方案。依据XDP用户空间和内核空间互动的特点，可以将其应用在诸如流量转发、隐私保护 、网络防火墙等诸多领域，在提高Android设备网络性能以适应5G时代的同时，为Android设备广大开发者提供除应用开发、驱动移植之外的另一个选择——高性能网络编程
 
 
 
