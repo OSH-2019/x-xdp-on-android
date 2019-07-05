@@ -16,7 +16,7 @@
 
 因此我们将XDP移植至android平台，为android平台提供高效的包处理工具。
 
-## BPF/eBPF Architecture on Android
+## 3. BPF/eBPF Architecture on Android
 
 Android 上的 eBPF 的文档也十分不全面，基本上我们也是一边对照官方残缺的文档，一边阅读 Android 中存在的 BPF 程序源码，一边读 Android BPF 的实现源码来搞懂的。
 
@@ -39,7 +39,7 @@ bpf {
 
 至于确认此程序是否运行起来，可以看 `/sys/fsbpf`。因为 bpf 会打开文件描述符，并将加载的程序放在那里。这和 linux 上的是一致的。
 
-### Difference between BPF on Android and Linux
+### 3.1 Difference between BPF on Android and Linux
 
 Android 上的 BPF 有一些变化。
 
@@ -68,11 +68,17 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
 
   在代码中访问时，可以用 `android::bpf::BpfMap`。`BpfMap` 的构造函数接受一个文件描述符作为参数。安卓的 `bpfloader` 在加载 BPF 程序的过程中，会将 map 对应的 section 放在 `/sys/fs/bpf/map_name_of_map` 中，所以可以通过 `bpf_obj_get` 得到该路径对应的 bpf 对象，再将其传给 BpfMap，就能通过 BpfMap 的高级类方法访问底层数据结构。
 
-##	3. Development Efforts
+##	4. Development Efforts
 
-### 3.1 Build Android Source Tree
+这一章节主要介绍：
 
-#### 3.1.1 Environments
+1. 如何搭建Android环境
+2. 如何解决Android libelf库依赖问题
+3. 重新定制Android内核，启用部分功能
+
+### 4.1 Build Android Source Tree
+
+#### 4.1.1 Environments
 
 * Hardware
   * Cpu： Intel(R) Xeon(R) Platinum 8153 CPU @ 2.00GHz × 2
@@ -83,7 +89,7 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
   * System：Ubuntu 18.10
   * Kernel：4.18.0-18-generic
 
-#### 3.1.2 Dependencies
+#### 4.1.2 Dependencies
 
 1. 硬件要求
 
@@ -120,7 +126,7 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
    sudo apt-get install lib32z-dev ccache
    ```
 
-#### 3.1.3 Download source codes
+#### 4.1.3 Download source codes
 
 由于众所周知的原因，官方源没法访问，所以我们选择清华源。
 
@@ -190,7 +196,7 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
 	```
 
 
-#### 3.1.4 Compile
+#### 4.1.4 Compile
 
 1. Initialize build env
 
@@ -213,7 +219,7 @@ Android 上的 BPF 源文件中的每个函数需要放在特定 section 中，�
 	m -j31
 	```
 
-#### 3.1.5 Run emulator
+#### 4.1.5 Run emulator
 
 初始化环境
 
@@ -231,7 +237,7 @@ emulator -no-window
 
 ![1561814946708](assets/1561814946708.png)
 
-#### 3.1.6 Interaction
+#### 4.1.6 Interaction
 
 用adb工具代替GUI界面进行交互
 
@@ -245,24 +251,24 @@ adb shell #启动shell
 
 [More details about adb](<https://developer.android.com/studio/command-line/adb>)
 
-### 3.2 Link iproute2 against libelf on Android
+### 4.2 Link iproute2 against libelf on Android
 
-#### 3.2.1 What's iproute2?
+#### 4.2.1 What's iproute2?
 
 > iproute2 is a collection of userspace utilities for controlling and monitoring various aspects of networking in the Linux kernel, including routing, network interfaces, tunnels, traffic control, and network-related device drivers.
 
 总的来说，iproute2 管理着 linux 网络栈的方方面面。
 
-#### 3.2.2 Why we need iproute2?
+#### 4.2.2 Why we need iproute2?
 
 iproute2 提供了一些非常有用的工具，能够加载 XDP 程序，并将 XDP 程序挂到网卡上。我们选择它作为 Android 上 XDP 的作为工具链之一，主要是因为它部分存在于 Android 内核中。
 
-#### 3.2.3 Where did the difficulty reside?
+#### 4.2.3 Where did the difficulty reside?
 
 - Android 关于 soong 编译系统的文档实在少的可怜，我们不得不参考 Android 源码中已有的例子来猜测一些选项及属性的意思。这给我们的跨平台编译造成了很大困难和阻碍。因此我们做了一个 Android.bp 的笔记，你可以在[Android.bp笔记](../notes/Android_bp.md)找到它。
 - Android 源码的代码结构不敢恭维。部分头文件和源文件被拷贝得到处都是，而且版本还不同。
 
-#### 3.2.4 How we find and solve the problem step by step?
+#### 4.2.4 How we find and solve the problem step by step?
 
 **HAVE_ELF**
 
@@ -479,13 +485,13 @@ cc_library {
 
 值得一提的是，Android 的 iproute2 源码中有一些小 bug。在链接了 libelf 后，这些 bug 由于 `-DHAVE_ELF` 的定义暴露了出来。大概 Android 的开发者由于并没有考虑链接这两者，所以也没有进行代码测试吧。我们修改了这些小 bug，最后 iproute2 正常运行。 
 
-### 3.3 Customize linux kernel
+### 4.3 Customize linux kernel
 
 默认的Android内核可能不支持某些功能，例如我们默认使用的内核 `4.4.112`不支持
 
 [AF_ALG sockets](http://man7.org/linux/man-pages/man2/socket.2.html)，由此导致iproute2无法创建sockets，加载Xdp程序，为此我们需要定制我们的Android内核。
 
-#### 3.3.4 Detect availability of kernel's AF_ALG sockets
+#### 4.3.1 Detect availability of kernel's AF_ALG sockets
 
 若在Android shell 用iproute2 加载 xdp 程序，若出现`No ELF library support compiled in`错误，则内核不支持 `AF_ALG sockets`
 
@@ -525,7 +531,7 @@ int main(){
 }
 ```
 
-#### 3.3.5 Determine the specific Linux kernel version
+#### 4.3.2 Determine the specific Linux kernel version
 
 用于运行Android镜像的Android emulator对内核版本特别敏感，具体体现在
 
@@ -626,7 +632,7 @@ int main(){
    emulator -kernel new_kernel_path
    ```
 
-#### 3.3.6 Customize Linux kernel (of Android) for XDP
+#### 4.3.3 Customize Linux kernel (of Android) for XDP
 
 这里需要指出Android prebuilt kernel中只启用了非常有限的内核功能，其默认内核连ipv6都不支持
 
@@ -675,7 +681,7 @@ int main(){
 
    若编译过程出错，请确定Android SKD工具完整，并且编译选项没有冲突矛盾，部分编译失败情况可能由内核编译选项引起。
 
-#### 3.3.6 Try our unique custom kernel
+#### 4.3.4 Try our unique custom kernel
 
 使用emulator加载新内核，这里我们成功启用了AF_ALG sockets，使得	iproute2可以加载Xdp程序。
 
@@ -683,9 +689,9 @@ int main(){
 emulator -kernel new_kernel_path
 ```
 
-## 4. Run XDP Programs (on Android)
+## 5. Run XDP Programs (on Android)
 
-### 4.1 Requirements
+### 5.1 Requirements
 
 - Successfully build Android source tree
 - Write correct format XDP/BPF program 
@@ -697,7 +703,7 @@ emulator -kernel new_kernel_path
   - Partitioning programs with tail calls.
   - Limited stack space of maximum 512 bytes.
 
-### 4.2 Compile XDP programs
+### 5.2 Compile XDP programs
 
 确保已经建立起完善的Android环境
 
@@ -721,7 +727,7 @@ char _license[] SEC("license") = "GPL";
 
 由于Android提供了一套比较完整的BPF编译工具，借用这套工具可以将我们的XDP程序编译并放进镜像中。
 
-#### 4.2.1 How to compile
+#### 5.2.1 How to compile
 
 1. `mv xdp_drop.c $ANDROID_TOP/system/netd/bpf_prog`
 
@@ -774,20 +780,20 @@ char _license[] SEC("license") = "GPL";
 
 6. 此时运行模拟器和Android shell，能够在`/system/etc/bpf` 中看到生成的xdp_drop.o文件
 
-#### 4.2.2 How to load
+#### 5.2.2 How to load
 
 Xdp程序加载有两种方法
 
 1. 使用iproute2工具将Xdp程序加载到kernel中运行
 2. 自己写相关的加载程序
 
-上述两种方法都依赖于`libelf`这个C语言库，在Android中没有其支持，请确保正常移植并能使用该库     [solve_link](#3.2.4 How we find and solve the problem step by step?)
+上述两种方法都依赖于`libelf`这个C语言库，在Android中没有其支持，请确保正常移植并能使用该库     [solve_link](#4.2.4 How we find and solve the problem step by step?)
 
 > ELF object file access library
 >
 > 'Libelf' lets you read, modify or create ELF files in an architecture-independent way. The library takes care of size and endian issues, e.g. you can process a file for SPARC processors on an Intel-based system. This library is a clean-room rewrite of the System V Release 4 library and is supposed to be source code compatible with it. It was meant primarily for porting SVR4 applications to other operating systems but can also be used as the basis for new applications (and as a light-weight alternative to libbfd).
 
-同时两种方法都依赖Android kernel 支持 AF_ALG sockets，请[检测AF_ALG sockets](#3.3.4 Detect availability of kernel's AF_ALG sockets)是否可用，若不可用请参考[定制Android内核](#3.3 Customize Android kernel)，重新定制内核
+同时两种方法都依赖Android kernel 支持 AF_ALG sockets，请[检测AF_ALG sockets](#4.3.1 Detect availability of kernel's AF_ALG sockets)是否可用，若不可用请参考[定制Android内核](#4.3 Customize Linux kernel)，重新定制内核
 
 ##### Usage of iproute2
 
@@ -798,9 +804,9 @@ ip link set dev em xdp obj xdp-example.o #xdp hook模式
 ip link set dev em xdpgeneric obj xdp-exampe.o #SKB-mode
 ```
 
-- 此处若出现`No ELF library support compiled in`错误，请参考[iproute2 定制](#3.2 Link iproute2 against libelf on Android), 重新定制`iproute2`程序
+- 此处若出现`No ELF library support compiled in`错误，请参考[iproute2 定制](#4.2 Link iproute2 against libelf on Android), 重新定制`iproute2`程序
 
-- 此处若出现`Socket AF_ALG: Address family not support`，则是当前内核不支持该协议，请参考[rebuild Android kernel](#3.3 Customize Android kernel)，定制你的安卓内核
+- 此处若出现`Socket AF_ALG: Address family not support`，则是当前内核不支持该协议，请参考[rebuild Android kernel](#4.3 Customize Linux kernel)，定制你的安卓内核
 
 - 如执行成功，则再次执行`ip link`，则被绑定Xdp的网口，会显示`xdp`程序的字样。此时Xdp程序已经成功在内核中运行起来，你可根据Xdp程序功能进行测试
 
@@ -812,7 +818,7 @@ ip link set dev em xdpgeneric obj xdp-exampe.o #SKB-mode
 ip link set dev em xdp off
 ```
 
-### 4.3 Run XDP programs
+### 5.3 Run XDP programs
 
 使用`ping`命令对xdp_drop进行测试
 
@@ -834,7 +840,7 @@ ping -w 1000 baidu.com
 
 可见xdp_drop程序已经能在kernel中正确发挥作用
 
-### 4.4 Debug XDP programs
+### 5.4 Debug XDP programs
 
 Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `bpf_dbg.c`、 `bpf_jit_disasm.c`），根据版本不同，在 `$KERNEL_TOP/tools/net/`（直到 Linux 4.14）或者 `$KERNEL_TOP/tools/bpf/` 目录下面：
 
@@ -866,11 +872,11 @@ Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `
 
 [more details about bpf](https://cilium.readthedocs.io/en/v1.4/bpf/)
 
-##	Future works
+##	6. Future works
 
 本项目基本完成了预定任务，但是仍然有美中不足的地方。由于Android对XDP的驱动支持还是一片空白，本项目是基于SKB-mode模式完成的。囿于本组组员对Android驱动开发不够熟悉、linux kernel理解不够深入和Android部分网卡驱动不开源的特殊性，在本学期内无法完成支持XDP的网卡驱动移植。如果后续还有机会，将会尝试移植支持XDP的网卡驱动至安卓上，实现XDP程序的满血版。
 
-##	项目展望
+##	7. Outlook
 
 在本项目的研究、移植过程中，还有以下发现：
 
