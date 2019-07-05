@@ -18,9 +18,72 @@
 
 ## 3. BPF/eBPF Architecture on Android
 
-Android 上的 eBPF 的文档也十分不全面，基本上我们也是一边对照官方残缺的文档，一边阅读 Android 中存在的 BPF 程序源码，一边读 Android BPF 的实现源码来搞懂的。
+Android 上的 eBPF 的文档也十分不全面，基本上我们也是一边阅读 Android 中存在的 BPF 程序源码，一边读 Android BPF 的实现源码来搞懂的。
 
-Android 自己在 BPF/eBPF 外面用 C++ 包了一层，提供了一些接口。这部分编译生成的库的名字叫做 `libbpf_android` ，可以在文件夹 `system/bpf/libbpf_android ` 中找到。比较重要的一个是定义了 `BpfMap`，它和底层的 bpf map 结构紧密相连，实际上就是提供了一个访问顶层 bpf map 的抽象 C++ OOP 接口，比较好用。关于对这部分的代码解释可以在我阅读源码的[笔记](../notes/rtfs.md)中找到。
+### 3.1 Android BPF C++ Wrapper
+
+Android 自己在 BPF/eBPF 外面用 C++ 包了一层，提供了一些接口。这部分编译生成的库的名字叫做 `libbpf_android` ，可以在文件夹 `system/bpf/libbpf_android ` 中找到。比较重要的一个是定义了 `BpfMap`，它和底层的 bpf map 结构紧密相连，实际上就是提供了一个访问顶层 bpf map 的抽象 C++ OOP 接口，比较好用。关于对这部分的代码解释可以在我**阅读源码的[笔记](../notes/rtfs.md)**中找到。
+
+以下是我们通过阅读源码记录的内容。
+
+#### 3.1.1 BpfMap
+
+BpfMap 定义在 `system/bpf/libbpf_android/include/bpf/BpfMap.h` 中（C++ Template 直接定义在头文件中）。它的构造函数定义如下：
+
+```c++
+BpfMap<Key, Value>() : mMapFd(-1){};
+explicit BpfMap<Key, Value>(int fd) : mMapFd(fd){};
+BpfMap<Key, Value>(bpf_map_type map_type, uint32_t max_entries, uint32_t map_flags) {
+    int map_fd = createMap(map_type, sizeof(Key), sizeof(Value), max_entries, map_flags);
+    if (map_fd < 0) {
+        mMapFd.reset(-1);
+    } else {
+        mMapFd.reset(map_fd);
+    }
+}
+```
+
+它实际上是接受一个文件描述符（`mMapFd`），这个文件描述符通过 `bpf_obj_get` 得到，这个描述符的内容指向的是 `SEC("map")`（即BPF 程序 map section）中的 bpf map 底层数据结构。这个 BpfMap 提供了一个一致的接口，用于通过高级操作访问底层数据结构。
+
+也可以通过 `.init` 来初始化，用法为：
+
+```cp
+mCookieTagMap.init(COOKIE_TAG_MAP_PATH)
+```
+
+其中 `COOKIE_TAG_MAP_PATH` 实际就是底层 bpf map 的路径，例如：
+
+`./netd/libnetdbpf/include/netdbpf/bpf_shared.h: #define COOKIE_TAG_MAP_PATH BPF_PATH "/map_netd_cookie_tag_map"`。
+
+#### 3.1.2 Loader.cpp
+
+安卓上的 BpfLoader 定义在 `system/bpf/libbpf_android/Loader.cpp` 中，这里是安卓自己定义的 BPF 的加载工具。
+
+首先可以看出，BPF 会被加载到 `/sys/fs/bpf` 中：
+
+```c++
+#define BPF_FS_PATH "/sys/fs/bpf/"
+```
+
+仔细阅读源码，可以发现，在加载函数的过程中，既可以自己调用函数，并给出各个 Section 的 BPF 程序类型属性等等，也可以选择由 Android 默认选择。Android 开机即加载 BPF 程序的功能就是通过默认选择实现的。默认对应关系为：
+
+```c++
+sectionType sectionNameTypes[] = {
+    {"kprobe", BPF_PROG_TYPE_KPROBE},
+    {"tracepoint", BPF_PROG_TYPE_TRACEPOINT},
+    {"skfilter", BPF_PROG_TYPE_SOCKET_FILTER},
+    {"cgroupskb", BPF_PROG_TYPE_CGROUP_SKB},
+    {"schedcls", BPF_PROG_TYPE_SCHED_CLS},
+    {"cgroupsock", BPF_PROG_TYPE_CGROUP_SOCK},
+
+    /* End of table */
+    {"END", BPF_PROG_TYPE_UNSPEC},
+};
+```
+
+这里就不详细讲每个程序类别是做什么的了。
+
+### 3.2 Compile and Run BPF Programs
 
 为了将 bpf 程序编译入 Android，并运行起来，我们需要在某个地方写个 bpf 程序，例如 `bpf_example.c` ，然后在该模块中的 `Android.bp` （关于 `Android.bp` 的一些记录，可以看 [这里](../notes/Android_bp.md))，增添这样的内容:
 
@@ -37,9 +100,9 @@ bpf {
 
 这样，程序会被编译到 `out/target/product/generic_x86_64/system/bpf/bpf_example.o` 中，这样，最后我们可以在运行 Android 的 /`system/bpf ` 中找到。值得一提的是，我们在使用 `m all` 或 `mma` 进行编译之后，需要在顶层目录输入 `make snod`，否则二进制文件可能不会打包到镜像中。`make snod` 的作用是重新打包生成 `system.img` 镜像。
 
-至于确认此程序是否运行起来，可以看 `/sys/fsbpf`。因为 bpf 会打开文件描述符，并将加载的程序放在那里。这和 linux 上的是一致的。
+置于确认此程序是否运行起来，可以看 `/sys/fs/bpf`。因为 bpf 会打开文件描述符，并将加载的程序放在那里。这和 linux 上的是一致的。
 
-### 3.1 Difference between BPF on Android and Linux
+### 3.3 Difference between BPF on Android and Linux
 
 Android 上的 BPF 有一些变化。
 
@@ -487,9 +550,11 @@ cc_library {
 
 ### 4.3 Customize linux kernel
 
-默认的Android内核可能不支持某些功能，例如我们默认使用的内核 `4.4.112`不支持
+Android 上的 linux 内核是预编译进去的。
 
-[AF_ALG sockets](http://man7.org/linux/man-pages/man2/socket.2.html)，由此导致iproute2无法创建sockets，加载Xdp程序，为此我们需要定制我们的Android内核。
+默认的Android内核可能不支持某些功能，例如我们默认使用的内核 `4.4.112`不支持 [AF_ALG sockets](http://man7.org/linux/man-pages/man2/socket.2.html)，由此导致iproute2无法创建sockets，加载XDP 程序，为此我们需要定制我们的Android内核。
+
+我们基于 Android 的 Goldfish Linux 内核，裁减了我们自己的 Linux 内核。
 
 #### 4.3.1 Detect availability of kernel's AF_ALG sockets
 
@@ -686,12 +751,24 @@ int main(){
 使用emulator加载新内核，这里我们成功启用了AF_ALG sockets，使得	iproute2可以加载Xdp程序。
 
 ```shell
-emulator -kernel new_kernel_path
+emulator -kernel ${new_kernel_path}
 ```
 
 ## 5. Run XDP Programs (on Android)
 
-### 5.1 Requirements
+### 5.1 Usage of this Project
+
+使用我们这个项目即可在 Android 上编译，加载并运行 XDP 程序。你只需要下载我们 `src/` 目录下的 elfutils 和 iproute2 子模块，并覆盖 Android 源码中对应的部分 `external/elfutils` 和 `external/iproute2` 即可。
+
+```bash
+git clone https://github.com/OSH-2019/x-xdp-on-android
+cd x-xdp-on-android
+git submodule init
+git submodule update --remote
+mv elfutils ${android_root}/external/elfutils -r && mv iproute2 ${android_root}/external/iproute2 -r
+```
+
+### 5.2 Requirements
 
 - Successfully build Android source tree
 - Write correct format XDP/BPF program 
@@ -703,7 +780,7 @@ emulator -kernel new_kernel_path
   - Partitioning programs with tail calls.
   - Limited stack space of maximum 512 bytes.
 
-### 5.2 Compile XDP programs
+### 5.3 Compile XDP programs
 
 确保已经建立起完善的Android环境
 
@@ -727,7 +804,7 @@ char _license[] SEC("license") = "GPL";
 
 由于Android提供了一套比较完整的BPF编译工具，借用这套工具可以将我们的XDP程序编译并放进镜像中。
 
-#### 5.2.1 How to compile
+#### 5.3.1 How to compile
 
 1. `mv xdp_drop.c $ANDROID_TOP/system/netd/bpf_prog`
 
@@ -780,7 +857,7 @@ char _license[] SEC("license") = "GPL";
 
 6. 此时运行模拟器和Android shell，能够在`/system/etc/bpf` 中看到生成的xdp_drop.o文件
 
-#### 5.2.2 How to load
+#### 5.3.2 How to load
 
 Xdp程序加载有两种方法
 
@@ -818,7 +895,7 @@ ip link set dev em xdpgeneric obj xdp-exampe.o #SKB-mode
 ip link set dev em xdp off
 ```
 
-### 5.3 Run XDP programs
+### 5.4 Run XDP programs
 
 使用`ping`命令对xdp_drop进行测试
 
@@ -840,7 +917,7 @@ ping -w 1000 baidu.com
 
 可见xdp_drop程序已经能在kernel中正确发挥作用
 
-### 5.4 Debug XDP programs
+### 5.5 Debug XDP programs
 
 Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `bpf_dbg.c`、 `bpf_jit_disasm.c`），根据版本不同，在 `$KERNEL_TOP/tools/net/`（直到 Linux 4.14）或者 `$KERNEL_TOP/tools/bpf/` 目录下面：
 
@@ -884,6 +961,3 @@ Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `
 2. 目前Android BPF程序执行过程没有针对性
 
 而我们所移植的XDP，可以很好的解决上述问题，提供高效可靠灵活、支持动态加载、具有针对性和泛化性的网络编程方案。依据XDP用户空间和内核空间互动的特点，可以将其应用在诸如流量转发、隐私保护 、网络防火墙等诸多领域，在提高Android设备网络性能以适应5G时代的同时，为Android设备广大开发者提供除应用开发、驱动移植之外的另一个选择——高性能网络编程
-
-
-
