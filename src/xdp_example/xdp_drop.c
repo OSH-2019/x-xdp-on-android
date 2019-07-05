@@ -1,7 +1,5 @@
 #include <linux/bpf.h>
-#include <linux/in.h>
-#include <linux/if_ether.h>
-#include <linux/ip.h>
+
 
 #define SEC(NAME) __attribute__((section(NAME), used))
 
