@@ -831,7 +831,7 @@ ping -w 1000 baidu.com
 
 - 未挂在xdp_drop前
 
-![1562315156489](assets/ping_baidu_before.png)
+  ![1562315156489](assets/ping_baidu_before.png)
 
 - 挂载xdp程序后
 
