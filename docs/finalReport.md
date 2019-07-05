@@ -804,7 +804,7 @@ ip link set dev em xdp obj xdp-example.o #xdp hook模式
 ip link set dev em xdpgeneric obj xdp-exampe.o #SKB-mode
 ```
 
-- 此处若出现`No ELF library support compiled in`错误，请参考[iproute2 定制](#4.2 Link iproute2 against libelf on Android), 重新定制`iproute2`程序
+- 此处若出现`No ELF library support compiled in`错误，请参考[iproute2 定制](#4.2Link iproute2 against libelf on Android), 重新定制`iproute2`程序
 
 - 此处若出现`Socket AF_ALG: Address family not support`，则是当前内核不支持该协议，请参考[rebuild Android kernel](#4.3 Customize Linux kernel)，定制你的安卓内核
 
