@@ -1,14 +1,14 @@
 #include <linux/bpf.h>
+#include <linux/in.h>
+#include <linux/if_ether.h>
+#include <linux/ip.h>
 
-#ifndef __section
-# define __section(NAME)                  \
-   __attribute__((section(NAME), used))
-#endif
+#define SEC(NAME) __attribute__((section(NAME), used))
 
-__section("prog")
+SEC("prog")
 int xdp_drop(struct xdp_md *ctx)
 {
     return XDP_DROP;
 }
 
-char __license[] __section("license") = "GPL";
+char _license[] SEC("license") = "GPL";
