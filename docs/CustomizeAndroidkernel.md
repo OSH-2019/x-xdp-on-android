@@ -2,7 +2,7 @@
 
 默认的Android内核可能不支持某些功能，例如我们默认使用的内核 `4.4.112`不支持
 
-[AF_ALG sockets]()，由此导致iproute2无法创建sockets，加载Xdp程序，为此我们需要定制我们的Android内核。
+[AF_ALG sockets](http://man7.org/linux/man-pages/man2/socket.2.html)，由此导致iproute2无法创建sockets，加载Xdp程序，为此我们需要定制我们的Android内核。
 
 ##	Detect availability of kernel's AF_ALG sockets
 
