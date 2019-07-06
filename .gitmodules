@@ -4,3 +4,6 @@
 [submodule "src/iproute2"]
 	path = src/iproute2
 	url = https://github.com/kaleid-liner/iproute2
+[submodule "src/bpfprogs"]
+	path = src/bpfprogs
+	url = https://github.com/kaleid-liner/bpfprogs
