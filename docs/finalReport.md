@@ -1008,11 +1008,27 @@ Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `
 
 而我们所移植的XDP，可以很好的解决上述问题，提供高效可靠灵活、支持动态加载、具有针对性和泛化性的网络编程方案。依据XDP用户空间和内核空间互动的特点，可以将其应用在诸如流量转发、隐私保护 、网络防火墙等诸多领域，在提高Android设备网络性能以适应5G时代的同时，为Android设备广大开发者提供除应用开发、驱动移植之外的另一个选择——高性能网络编程
 
-##	8. Acknowledgement
+## 8. Division of Labour
+
+龚平（组长）和魏剑宇主要负责技术方面的工作。龚平除了给予项目指导工作，指挥分工，确认方向外，还搭建了 Android 的开发环境，根据项目的需要定制、裁剪和测试了 linux 内核，并实际挂载、运行和测试了 Android 上的 XDP 程序。魏剑宇主要负责代码方面的工作，他通过阅读 Android 的源码，弄清 Android 上 BPF 的架构，和 Android 的 soong 编译系统，实际修改 Android.bp 文件和库源码，完成了库移植、链接和 XDP 工具链的完善。
+
+Android 上 XDP 的移植并不是一个技术上非常困难的工作，但由于 Android 源码规模过大，文档不充分，我们对 BPF XDP技术并不是特别了解，所以调研、确定方向就特别重要。黄展翔、罗极羽和王怡萱主要负责了前期调研，确定方向，通过广泛阅读各类文档，为我们的项目提供了知识储备，并负责了 linux 和 android 平台上的实验，测试和探究工作。其中，黄展翔和罗极羽同学调研了 BPF 和 XDP 的差别，并在 linux 上测试了 一些 XDP 程序的运行，为我们提供了方向。其中罗极羽负责的一个防 ddos 程序也被我们后期移植到了 Android 上，用于 XDP 的测试。王怡萱调研了 Android 上的 eBPF 程序的一般化编写方式，并实际考察了 Android 上的流量监控程序，同时她还是我们组的主力 ppt 工程师。
+
+##	9. Acknowledgement
 
 邢凯老师为我们提供了将xdp移植到android这一方向，并为我们评估了驱动方面的难度，在我们项目遇到困境时给予我们极大的鼓励。
 
 何纪言助教为我们的移植工作提供了方向性指导，并在工程方面提供了很多切实的建议。
 
 在此本小组成员一并感谢。
+
+## 10. Reference
+
+- [notes on bpf](<https://blogs.oracle.com/linux/notes-on-bpf-1>)
+- [Android dependency build error](<https://www.jianshu.com/p/f239e919352a>)
+- [soong readme](<https://android.googlesource.com/platform/build/soong/+/master/README.md>)
+- [Android Source](<https://android.googlesource.com/>)
+- [Android BPF](<https://source.android.com/devices/architecture/kernel/bpf>)
+- [elfutils/libelf](<https://sourceware.org/elfutils/>)
+- [wiki: iproute2](<https://en.wikipedia.org/wiki/Iproute2>)
 
