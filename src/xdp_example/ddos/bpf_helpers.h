@@ -8,6 +8,12 @@
  */
 #define SEC(NAME) __attribute__((section(NAME), used))
 
+// just a workaround
+typedef __u16 u16;
+typedef __u32 u32;
+typedef __u64 u64;
+typedef __u8 u8;
+
 /* helper functions missing upstream in this file */
 static int (*bpf_skb_vlan_push)(void *ctx, __be16 vlan_proto, u16 vlan_tci) =
 	(void *) BPF_FUNC_skb_vlan_push;

@@ -13,6 +13,13 @@
 #include <linux/tcp.h>
 #include <linux/udp.h>
 #include "bpf_helpers.h"
+#include <stdbool.h>
+#include <arpa/inet.h>
+#include <netinet/udp.h>
+
+// just a workaround
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
 
 enum {
 	DDOS_FILTER_TCP = 0,
