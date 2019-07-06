@@ -45,11 +45,30 @@ cc_library {
 }
 
 bpf {
-    name: "xdp_ddos01_blacklist.o",
+    name: "xdp_ddos01_blacklist_kern.o",
 
     srcs: [
         "xdp_ddos01_blacklist_kern.c",
     ],
 
+}
+
+cc_binary {
+    name: "xdp_ddos01_blacklist_user",
+
+    srcs: [
+        "xdp_ddos01_blacklist_user.c",
+    ],
+
+    static_libs: ["libelf"],
+    shared_libs: [
+        "libmybpf", 
+        "libmybpfload", 
+    ],
+
+    local_include_dirs: [
+        "kernel-usr-include",
+        "tools/lib",
+    ],
 }
 

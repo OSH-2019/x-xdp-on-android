@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 	gid_t group = -1;
 	int opt;
 
-	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
+	snprintf(filename, sizeof(filename), "/system/etc/bpf/xdp_ddos01_blacklist_kern.o");
 
 	/* Parse commands line args */
 	while ((opt = getopt_long(argc, argv, "hSrqd:",
