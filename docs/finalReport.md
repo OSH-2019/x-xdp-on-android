@@ -1,5 +1,51 @@
 [TOC]
 
+
+
+   * [Final Report](#final-report)
+      * [1. Introduction](#1-introduction)
+      * [2. Background](#2-background)
+      * [3. BPF/eBPF Architecture on Android](#3-bpfebpf-architecture-on-android)
+         * [3.1 Android BPF C   Wrapper](#31-android-bpf-c-wrapper)
+            * [3.1.1 BpfMap](#311-bpfmap)
+            * [3.1.2 Loader.cpp](#312-loadercpp)
+         * [3.2 Compile and Run BPF Programs](#32-compile-and-run-bpf-programs)
+         * [3.3 Difference between BPF on Android and Linux](#33-difference-between-bpf-on-android-and-linux)
+      * [4. Development Efforts](#4-development-efforts)
+         * [4.1 Build Android Source Tree](#41-build-android-source-tree)
+            * [4.1.1 Environments](#411-environments)
+            * [4.1.2 Dependencies](#412-dependencies)
+            * [4.1.3 Download source codes](#413-download-source-codes)
+            * [4.1.4 Compile](#414-compile)
+            * [4.1.5 Run emulator](#415-run-emulator)
+            * [4.1.6 Interaction](#416-interaction)
+         * [4.2 Link iproute2 against libelf on Android](#42-link-iproute2-against-libelf-on-android)
+            * [4.2.1 What's iproute2?](#421-whats-iproute2)
+            * [4.2.2 Why we need iproute2?](#422-why-we-need-iproute2)
+            * [4.2.3 Where did the difficulty reside?](#423-where-did-the-difficulty-reside)
+            * [4.2.4 How we find and solve the problem step by step?](#424-how-we-find-and-solve-the-problem-step-by-step)
+               * [Try #1: Add "-DHAVE_ELF" to cflags](#try-1-add--dhave_elf-to-cflags)
+               * [Try #2: Link iproute2 against libelf by adding shared_libs](#try-2-link-iproute2-against-libelf-by-adding-shared_libs)
+               * [Try #3: edit target property to link properly](#try-3-edit-target-property-to-link-properly)
+               * [Try #4: edit visibility property to change visibility](#try-4-edit-visibility-property-to-change-visibility)
+               * [Fix some minor bugs in Android source code](#fix-some-minor-bugs-in-android-source-code)
+         * [4.3 Customize linux kernel](#43-customize-linux-kernel)
+            * [4.3.1 Detect availability of kernel's AF_ALG sockets](#431-detect-availability-of-kernels-af_alg-sockets)
+            * [4.3.2 Determine the specific Linux kernel version](#432-determine-the-specific-linux-kernel-version)
+            * [4.3.3 Customize Linux kernel (of Android) for XDP](#433-customize-linux-kernel-of-android-for-xdp)
+            * [4.3.4 Try our unique custom kernel](#434-try-our-unique-custom-kernel)
+      * [5. Run XDP Programs (on Android)](#5-run-xdp-programs-on-android)
+         * [5.1 Usage of this Project](#51-usage-of-this-project)
+         * [5.2 Requirements](#52-requirements)
+         * [5.3 Compile XDP programs](#53-compile-xdp-programs)
+            * [5.3.1 How to compile](#531-how-to-compile)
+            * [5.3.2 How to load](#532-how-to-load)
+               * [Usage of iproute2](#usage-of-iproute2)
+         * [5.4 Run XDP programs](#54-run-xdp-programs)
+         * [5.5 Debug XDP programs](#55-debug-xdp-programs)
+      * [6. Future works](#6-future-works)
+      * [7. Outlook](#7-outlook)
+
 #	Final Report
 
 ##	1. Introduction
@@ -16,7 +62,7 @@
 
 因此我们将XDP移植至android平台，为android平台提供高效的包处理工具。
 
-## 3. BPF/eBPF Architecture on Android
+## 3. cBPF/eBPF Architecture on Android
 
 Android 上的 eBPF 的文档也十分不全面，基本上我们也是一边阅读 Android 中存在的 BPF 程序源码，一边读 Android BPF 的实现源码来搞懂的。
 
@@ -870,7 +916,7 @@ Xdp程序加载有两种方法
 >
 > 'Libelf' lets you read, modify or create ELF files in an architecture-independent way. The library takes care of size and endian issues, e.g. you can process a file for SPARC processors on an Intel-based system. This library is a clean-room rewrite of the System V Release 4 library and is supposed to be source code compatible with it. It was meant primarily for porting SVR4 applications to other operating systems but can also be used as the basis for new applications (and as a light-weight alternative to libbfd).
 
-同时两种方法都依赖Android kernel 支持 AF_ALG sockets，请 [检测AF_ALG sockets](#4.3.1-Detect-availability-of-kernel's-AF_ALG-sockets) 是否可用，若不可用请参考 [定制Android内核](#4.3-Customize-Linux-kernel) ，重新定制内核
+同时两种方法都依赖Android kernel 支持 AF_ALG sockets，请 [检测AF_ALG sockets](#431-detect-availability-of-kernel's-AF_ALG-sockets) 是否可用，若不可用请参考 [定制Android内核](#4.3-Customize-Linux-kernel) ，重新定制内核
 
 ##### Usage of iproute2
 
@@ -881,7 +927,7 @@ ip link set dev em xdp obj xdp-example.o #xdp hook模式
 ip link set dev em xdpgeneric obj xdp-exampe.o #SKB-mode
 ```
 
-- 此处若出现`No ELF library support compiled in`错误，请参考 [iproute2 定制](#4.2-Link-iproute2-against-libelf-on-Android) , 重新定制`iproute2`程序
+- 此处若出现`No ELF library support compiled in`错误，请参考 [iproute2 定制](#42-Link-iproute2-against-libelf-on-Android) , 重新定制`iproute2`程序
 
 - 此处若出现`Socket AF_ALG: Address family not support`，则是当前内核不支持该协议，请参考 [rebuild Android kernel](#4.3-Customize-Linux kernel) ，定制你的安卓内核
 
