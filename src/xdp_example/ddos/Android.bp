@@ -1,0 +1,55 @@
+cc_library {
+    name: "libmybpf",
+    
+    srcs: [
+        "tools/lib/bpf/bpf.c",
+        "tools/lib/bpf/btf.c",
+        "tools/lib/bpf/libbpf.c",
+        "tools/lib/bpf/nlattr.c",
+    ],
+
+    local_include_dirs: [
+        "tools/",
+        "tools/include",
+        "tools/perf",
+        "kernel-usr-include",
+    ],
+
+
+    cflags: [
+    ],
+
+    static_libs: ["libelf", "libz"],
+
+}
+
+cc_library {
+    name: "libmybpfload",
+    
+    srcs: [
+        "bpf_load.c",
+    ],
+
+    local_include_dirs: [
+        "kernel-usr-include",
+        "tools/lib",
+        "kernel/include",
+    ],
+
+    include_dirs: [
+        "external/elfutils/libelf",
+    ],
+
+    static_libs: ["libelf"],
+    shared_libs: ["libmybpf"],
+}
+
+bpf {
+    name: "xdp_ddos01_blacklist.o",
+
+    srcs: [
+        "xdp_ddos01_blacklist_kern.c",
+    ],
+
+}
+

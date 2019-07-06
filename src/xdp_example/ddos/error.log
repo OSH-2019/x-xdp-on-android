@@ -1,0 +1,103 @@
+============================================
+PLATFORM_VERSION_CODENAME=R
+PLATFORM_VERSION=R
+TARGET_PRODUCT=aosp_x86_64
+TARGET_BUILD_VARIANT=eng
+TARGET_BUILD_TYPE=release
+TARGET_ARCH=x86_64
+TARGET_ARCH_VARIANT=x86_64
+TARGET_2ND_ARCH=x86
+TARGET_2ND_ARCH_VARIANT=x86_64
+HOST_ARCH=x86_64
+HOST_2ND_ARCH=x86
+HOST_OS=linux
+HOST_OS_EXTRA=Linux-4.18.0-18-generic-x86_64-Ubuntu-18.10
+HOST_CROSS_OS=windows
+HOST_CROSS_ARCH=x86
+HOST_CROSS_2ND_ARCH=x86_64
+HOST_BUILD_TYPE=release
+BUILD_ID=PI
+OUT_DIR=out
+============================================
+ninja: no work to do.
+ninja: no work to do.
+No need to regenerate ninja file
+No need to regenerate ninja file
+No need to regenerate ninja file
+Starting ninja...
+[  8% 1/12] target Prebuilt: libmybpfload (out/target/product/generic_x86_64/obj/SHARED_LIBRARIES/libmybpfload_intermediates/libmybpfload.so)
+[ 16% 2/12] target Prebuilt: libmybpfload_32 (out/target/product/generic_x86_64/obj_x86/SHARED_LIBRARIES/libmybpfload_intermediates/libmybpfload.so)
+[ 25% 3/12] Install: out/target/product/generic_x86_64/system/lib64/libmybpfload.so
+[ 33% 4/12] Install: out/target/product/generic_x86_64/system/lib/libmybpfload.so
+[ 41% 5/12] //system/bpfprogs/ddos:libmybpfload generate toc libmybpfload.so
+[ 50% 6/12] //system/bpfprogs/ddos:libmybpfload generate toc libmybpfload.so [x86]
+[ 58% 7/12] Copy: out/target/product/generic_x86_64/obj/SHARED_LIBRARIES/libmybpfload_intermediates/libmybpfload.so.toc
+[ 66% 8/12] Copy: out/target/product/generic_x86_64/obj_x86/SHARED_LIBRARIES/libmybpfload_intermediates/libmybpfload.so.toc
+[ 75% 9/12] prebuilts/clang/host/linux-x86/clang-r353983c/bin/clang --target=bpf -c -nostdlibinc -O2 -isystem bionic/libc/include -isystem bionic/libc/kernel/uapi -isystem bionic/libc/kernel/uapi/asm-arm64 -isystem bionic/libc/kernel/android/uapi -I       system/bpf/progs/include -I system/bpfprogs/ddos -MD -MF out/soong/.intermediates/system/bpfprogs/ddos/xdp_ddos01_blacklist.o/android_common/obj/system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.o.d -o out/soong/.intermediates/system/bpfprogs/ddos/xdp_ddos01_blacklist.o/android_common/obj/system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.o system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c
+FAILED: out/soong/.intermediates/system/bpfprogs/ddos/xdp_ddos01_blacklist.o/android_common/obj/system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.o
+prebuilts/clang/host/linux-x86/clang-r353983c/bin/clang --target=bpf -c -nostdlibinc -O2 -isystem bionic/libc/include -isystem bionic/libc/kernel/uapi -isystem bionic/libc/kernel/uapi/asm-arm64 -isystem bionic/libc/kernel/android/uapi -I       system/bpf/progs/include -I system/bpfprogs/ddos -MD -MF out/soong/.intermediates/system/bpfprogs/ddos/xdp_ddos01_blacklist.o/android_common/obj/system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.o.d -o out/soong/.intermediates/system/bpfprogs/ddos/xdp_ddos01_blacklist.o/android_common/obj/system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.o system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c
+In file included from system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:15:
+system/bpfprogs/ddos/bpf_helpers.h:12:63: error: unknown type name 'u16'
+static int (*bpf_skb_vlan_push)(void *ctx, __be16 vlan_proto, u16 vlan_tci) =
+                                                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:30:24: error: use of undeclared identifier 'u32'
+        .key_size    = sizeof(u32),
+                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:31:24: error: use of undeclared identifier 'u64'
+        .value_size  = sizeof(u64), /* Drop counter */
+                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:41:21: error: use of undeclared identifier 'u32'
+        .key_size = sizeof(u32),
+                           ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:48:24: error: use of undeclared identifier 'u32'
+        .key_size    = sizeof(u32),
+                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:49:24: error: use of undeclared identifier 'u32'
+        .value_size  = sizeof(u32),
+                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:58:24: error: use of undeclared identifier 'u32'
+        .key_size    = sizeof(u32),
+                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:59:24: error: use of undeclared identifier 'u64'
+        .value_size  = sizeof(u64),
+                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:66:24: error: use of undeclared identifier 'u32'
+        .key_size    = sizeof(u32),
+                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:67:24: error: use of undeclared identifier 'u64'
+        .value_size  = sizeof(u64),
+                              ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:103:27: error: unknown type name 'u32'
+void stats_action_verdict(u32 action)
+                          ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:105:2: error: use of undeclared identifier 'u64'
+        u64 *value;
+        ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:105:7: error: use of undeclared identifier 'value'
+        u64 *value;
+             ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:110:2: error: use of undeclared identifier 'value'
+        value = bpf_map_lookup_elem(&verdict_cnt, &action);
+        ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:111:6: error: use of undeclared identifier 'value'
+        if (value)
+            ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:112:4: error: use of undeclared identifier 'value'
+                *value += 1;
+                 ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:120:1: error: unknown type name 'bool'
+bool parse_eth(struct ethhdr *eth, void *data_end,
+^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:121:9: error: unknown type name 'u16'
+               u16 *eth_proto, u64 *l3_offset)
+               ^
+system/bpfprogs/ddos/xdp_ddos01_blacklist_kern.c:121:25: error: unknown type name 'u64'
+               u16 *eth_proto, u64 *l3_offset)
+                               ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated.
+ninja: build stopped: subcommand failed.
+14:51:36 ninja failed with: exit status 1
+
+[0;31m#### failed to build some targets (5 seconds) ####[00m
+
