@@ -732,7 +732,7 @@ int main(){
 
    ```shell
    cd $KERNEL_TOP
-   ./$ANDROID_TOP/prebuilts/qemu-kernel/build-kernel.sh --arch=x86_64_ranchu --out=.
+   ./$ANDROID_TOP/prebuilts/qemu-kernel/build-kernel.sh --arch=x86_64 --config=x86_64_ranchu --out=.
    ```
 
 7. 加载使用
@@ -787,7 +787,7 @@ int main(){
    编译
 
    ```shell
-   ./$ANDROID_TOP/prebuilts/qemu-kernel/build-kernel.sh --arch=x86_64_ranchu --out=.
+   ./$ANDROID_TOP/prebuilts/qemu-kernel/build-kernel.sh --arch=x86_64 -config=x86_64_ranchu --out=.
    ```
 
    若编译过程出错，请确定Android SKD工具完整，并且编译选项没有冲突矛盾，部分编译失败情况可能由内核编译选项引起。
