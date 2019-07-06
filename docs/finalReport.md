@@ -814,6 +814,12 @@ git submodule update --remote
 mv elfutils ${android_root}/external/elfutils -r && mv iproute2 ${android_root}/external/iproute2 -r
 ```
 
+并使用我们提供的 `src/.config` 文件编译 linux 内核，并在启动模拟器时输入加上如下选项：
+
+```bash
+emulator -no-window -kernel ${path_to_linux_kernel}
+```
+
 ### 5.2 Requirements
 
 - Successfully build Android source tree
