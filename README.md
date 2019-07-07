@@ -14,6 +14,8 @@ x-xdp-on-android created by GitHub Classroom
 
 [可行性报告](docs/feasibility.md)
 
+[结题报告](docs/conclusion.md)
+
 ##	Discussion
 
 [第一次讨论](discussion/1.md)
