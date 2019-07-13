@@ -967,6 +967,8 @@ ping -w 1000 baidu.com
 
 可见xdp_drop程序已经能在kernel中正确发挥作用
 
+[简单的性能测试](LoadAndTest.md)
+
 ### 5.5 Debug XDP programs
 
 Android kernel中带有 BPF 相关的三个工具的源代码（`bpf_asm.c`、 `bpf_dbg.c`、 `bpf_jit_disasm.c`），根据版本不同，在 `$KERNEL_TOP/tools/net/`（直到 Linux 4.14）或者 `$KERNEL_TOP/tools/bpf/` 目录下面：
