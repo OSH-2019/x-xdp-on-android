@@ -967,7 +967,7 @@ ping -w 1000 baidu.com
 
 可见xdp_drop程序已经能在kernel中正确发挥作用
 
-[简单的性能测试](LoadAndTest.md)
+[简单的性能测试](LoadTest.md)
 
 ### 5.5 Debug XDP programs
 
